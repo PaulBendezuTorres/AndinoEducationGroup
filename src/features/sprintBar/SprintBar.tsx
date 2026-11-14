@@ -1,11 +1,9 @@
 import { Button } from "../../shared/components/UI";
 import { useAppStore } from "../../shared/context/AppStore";
-import type { Page, Role } from "../../shared/types/domain";
+import type { Page } from "../../shared/types/domain";
 
 export function SprintBar({ go }: { go: (page: Page) => void }) {
   const {
-    role,
-    setRole,
     students,
     selectedStudentId,
     simulateWhatsAppGroup,
@@ -57,16 +55,6 @@ export function SprintBar({ go }: { go: (page: Page) => void }) {
       >
         + Archivo de Inactivo
       </Button>
-      <select
-        className="select-input"
-        aria-label="Rol activo"
-        value={role}
-        onChange={(e) => setRole(e.target.value as Role)}
-      >
-        <option value="Administrador">Rol: Administrador</option>
-        <option value="Encargado">Rol: Encargado</option>
-        <option value="Personal">Rol: Personal</option>
-      </select>
       <Button onClick={resetAll}>Reiniciar</Button>
     </div>
   );
