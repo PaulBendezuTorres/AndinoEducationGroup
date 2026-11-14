@@ -1020,23 +1020,24 @@ dd {
 .login-copy {
   margin: 0;
   width: 100%;
-  max-width: 440px;
+  max-width: 540px;
 }
 .login-copy h1 {
   font-family: "Inter:Semi Bold", Inter, Arial, sans-serif;
-  font-size: 30px;
+  font-size: 28px;
   font-weight: 600;
   line-height: 1.3;
   letter-spacing: normal;
   text-wrap: balance;
   color: #26364b;
-  margin: 0 0 16px;
+  margin: 0 0 14px;
 }
 .login-copy > p {
   color: #64748b;
   font-size: 15px;
   line-height: 1.65;
-  text-wrap: pretty;
+  text-wrap: balance;
+  max-width: 520px;
   margin: 0;
 }
 .feature-list {
