@@ -1221,11 +1221,8 @@ function Alerts({ go }: { go: (p: Page) => void }) {
                       >
                         Revisar archivo
                       </Button>
-                      <Button onClick={() => resolveInactiveAlert(a.id, true, false)}>
-                        Autorizar solo documento
-                      </Button>
-                      <Button primary onClick={() => resolveInactiveAlert(a.id, true, true)}>
-                        Autorizar y reactivar
+                      <Button primary onClick={() => resolveInactiveAlert(a.id, true, false)}>
+                        Autorizar documento
                       </Button>
                     </div>
                   )}
