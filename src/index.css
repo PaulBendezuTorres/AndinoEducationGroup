@@ -1384,3 +1384,13 @@ dd {
     font-size: 20px;
   }
 }
+
+.table th,
+.table td {
+  font-size: 13px;
+}
+.table .sub,
+.card .sub {
+  font-size: 12.5px;
+  color: #64748b;
+}
