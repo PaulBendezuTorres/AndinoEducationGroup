@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Badge, Button } from "../../shared/components/UI";
+import { Button } from "../../shared/components/UI";
 import { useAppStore } from "../../shared/context/AppStore";
 import type { Page } from "../../shared/types/domain";
 
@@ -14,6 +14,14 @@ export function SprintBar({ page, go }: { page: Page; go: (page: Page) => void }
   } = useAppStore();
   const [visible, setVisible] = useState(true);
 
+  const isStudents = page === "students" || page === "validation" || page === "student";
+  const isDocs = page === "documents" || page === "review";
+  const isAlerts = page === "alerts";
+
+  // Solo mostrar acciones rápidas en Estudiantes (si no es Personal), Documentos o Alertas
+  const hasActions = (isStudents && role !== "Personal") || isDocs || isAlerts;
+  if (!hasActions) return null;
+
   const inactiveStudent = students.find((s) => s.status === "Inactivo");
   const activeStudent = students.find((s) => s.id === selectedStudentId) ?? students[0];
 
@@ -26,62 +34,53 @@ export function SprintBar({ page, go }: { page: Page; go: (page: Page) => void }
     );
   }
 
-  const isStudents = page === "students" || page === "validation" || page === "student";
-  const isDocs = page === "documents" || page === "review";
-  const isAlerts = page === "alerts";
-  const isHome = page === "home";
-
   return (
     <div className="sprint-bar">
       <span className="sprint-bar-label">Acciones rápidas:</span>
 
-      {(isHome || isStudents) && role !== "Personal" && (
+      {isStudents && role !== "Personal" && (
         <Button
           onClick={() => {
             simulateWhatsAppGroup();
             go("validation");
           }}
         >
-          <Badge tone="blue">Estudiantes</Badge> + Nuevo grupo
-        </Button>
-      )}
-
-      {(isHome || isStudents || isDocs) && (
-        <Button
-          onClick={() => {
-            if (activeStudent) {
-              simulateFileUpload(activeStudent.id, "Estudiante");
-              go("documents");
-            }
-          }}
-        >
-          <Badge tone="green">Documentos</Badge> + Archivo estudiante
+          + Nuevo grupo WhatsApp
         </Button>
       )}
 
       {isDocs && (
-        <Button
-          onClick={() => {
-            if (activeStudent) {
-              simulateFileUpload(activeStudent.id, "Personal de Andino");
-              go("documents");
-            }
-          }}
-        >
-          <Badge tone="gray">Documentos</Badge> + Archivo personal
-        </Button>
+        <>
+          <Button
+            onClick={() => {
+              if (activeStudent) {
+                simulateFileUpload(activeStudent.id, "Estudiante");
+              }
+            }}
+          >
+            + Archivo de Estudiante
+          </Button>
+          <Button
+            onClick={() => {
+              if (activeStudent) {
+                simulateFileUpload(activeStudent.id, "Personal de Andino");
+              }
+            }}
+          >
+            + Archivo de Personal
+          </Button>
+        </>
       )}
 
-      {(isHome || isAlerts) && (
+      {isAlerts && (
         <Button
           onClick={() => {
             if (inactiveStudent) {
               simulateFileUpload(inactiveStudent.id, "Estudiante", "certificado_inactivo.pdf");
-              go("alerts");
             }
           }}
         >
-          <Badge tone="amber">Alertas</Badge> + Archivo inactivo
+          + Archivo de Inactivo
         </Button>
       )}
 
