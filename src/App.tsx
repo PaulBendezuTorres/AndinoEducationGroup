@@ -995,29 +995,127 @@ function Alerts({ go }: { go: (p: Page) => void }) {
 }
 
 function Integrations() {
+  const [waActive, setWaActive] = useState(true);
+  const [driveVerified, setDriveVerified] = useState(true);
+  const [aiThreshold, setAiThreshold] = useState("80");
+
   return (
     <>
       <PageHead
         title="Integraciones"
-        subtitle="Estado de conexión con WhatsApp Business, Google Drive y Gemini API."
+        subtitle="Configuración y estado operativo de WhatsApp Business, Google Drive y Gemini API."
       />
-      <div className="metrics-grid">
+      <div className="three-col">
         <Card>
-          <h3>WhatsApp Business</h3>
-          <Badge tone="green">Conectado</Badge>
-          <p className="sub">Escucha activa de grupos y remitentes.</p>
+          <div className="card-head">
+            <h3>WhatsApp Business</h3>
+            <Badge tone={waActive ? "green" : "amber"}>
+              {waActive ? "Conectado" : "Pausado"}
+            </Badge>
+          </div>
+          <div className="stack">
+            <p className="sub">Escucha en tiempo real de grupos y remitentes.</p>
+            <div className="row-item">
+              <span className="sub">Línea oficial</span>
+              <strong>+51 999 100 200</strong>
+            </div>
+            <div className="row-item">
+              <span className="sub">Webhook</span>
+              <strong>Activo (&lt; 5 s)</strong>
+            </div>
+            <div className="head-action">
+              <Button onClick={() => setWaActive((v) => !v)}>
+                {waActive ? "Pausar escucha" : "Reanudar escucha"}
+              </Button>
+            </div>
+          </div>
         </Card>
+
         <Card>
-          <h3>Google Drive</h3>
-          <Badge tone="green">Conectado</Badge>
-          <p className="sub">Almacenamiento automático por carpeta vinculada.</p>
+          <div className="card-head">
+            <h3>Google Drive</h3>
+            <Badge tone={driveVerified ? "green" : "amber"}>
+              {driveVerified ? "Conectado" : "Pendiente"}
+            </Badge>
+          </div>
+          <div className="stack">
+            <p className="sub">Almacenamiento directo en carpetas de estudiantes.</p>
+            <div className="row-item">
+              <span className="sub">Cuenta</span>
+              <strong>documentos@andino.edu</strong>
+            </div>
+            <div className="row-item">
+              <span className="sub">Carpeta raíz</span>
+              <strong>Andino Drive / Estudiantes</strong>
+            </div>
+            <div className="head-action">
+              <Button onClick={() => setDriveVerified(true)}>Verificar permisos</Button>
+            </div>
+          </div>
         </Card>
+
         <Card>
-          <h3>Clasificador IA</h3>
-          <Badge tone="green">Activo</Badge>
-          <p className="sub">Detección automática de 5 categorías documentales.</p>
+          <div className="card-head">
+            <h3>Clasificador IA (Gemini)</h3>
+            <Badge tone="green">Activo</Badge>
+          </div>
+          <div className="stack">
+            <p className="sub">Clasificación automática en 5 categorías documentales.</p>
+            <div className="row-item">
+              <span className="sub">Tiempo promedio</span>
+              <strong>&lt; 10 segundos</strong>
+            </div>
+            <label className="field">
+              <span>Umbral de confianza automática</span>
+              <select
+                className="select-input"
+                value={aiThreshold}
+                onChange={(e) => setAiThreshold(e.target.value)}
+              >
+                <option value="75">75% o superior</option>
+                <option value="80">80% o superior (Recomendado)</option>
+                <option value="90">90% o superior (Estricto)</option>
+              </select>
+            </label>
+          </div>
         </Card>
       </div>
+
+      <Card>
+        <div className="card-head">
+          <h3>Políticas automáticas activas</h3>
+          <Badge tone="blue">Seguridad documental</Badge>
+        </div>
+        <div className="stack">
+          <div className="row-item">
+            <div>
+              <strong>Bloqueo sin carpeta Drive</strong>
+              <div className="sub">
+                Estudiantes en estado Pendiente o sin carpeta vinculada no almacenan archivos.
+              </div>
+            </div>
+            <Badge tone="green">Activo</Badge>
+          </div>
+          <div className="row-item">
+            <div>
+              <strong>Exclusión de Personal de Andino</strong>
+              <div className="sub">
+                Guías o folletos enviados por asesores se marcan como Excluido de IA.
+              </div>
+            </div>
+            <Badge tone="green">Activo</Badge>
+          </div>
+          <div className="row-item">
+            <div>
+              <strong>Retención preventiva de Inactivos</strong>
+              <div className="sub">
+                Documentos de estudiantes inactivos quedan en revisión y generan alerta prioritaria.
+              </div>
+            </div>
+            <Badge tone="green">Activo</Badge>
+          </div>
+        </div>
+      </Card>
     </>
   );
 }
