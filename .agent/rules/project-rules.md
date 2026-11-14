@@ -49,3 +49,7 @@ Respetar estrictamente la paleta de colores definida en `src/index.css`:
 - **Cierre y Región Común**: Definir claramente dónde empieza y termina cada bloque/tarjeta (borde `#e2e8f0`, fondo `#ffffff`, `border-radius` y `padding` consistentes).
 - **Proximidad**: Agrupar elementos relacionados (título + subtítulo, acciones juntas) con `gap` consistente y separar secciones distintas.
 - **Proporción**: Evitar tarjetas estiradas con espacio vacío innecesario (`align-items: start` en grillas).
+- **Semejanza**: Elementos con la misma función deben compartir estilo visual (badges de estado, botones primarios/secundarios e iconos).
+- **Figura y Fondo**: Mantener contraste claro entre el fondo base (`#f4f7fb`) y las superficies activas (`#ffffff`).
+- **Continuidad**: Alineación estricta en columnas, tablas y formularios para guiar la lectura sin saltos visuales.
+- **Destino Común**: Controles que operan sobre el mismo bloque (filtros, buscador y tabla) deben agruparse dentro de la misma región.
