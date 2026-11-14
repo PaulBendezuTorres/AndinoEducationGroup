@@ -941,8 +941,8 @@ function ReviewForm({
   );
 }
 
-function Alerts() {
-  const { role, alerts, resolveInactiveAlert } = useAppStore();
+function Alerts({ go }: { go: (p: Page) => void }) {
+  const { role, alerts, resolveInactiveAlert, setSelectedStudentId } = useAppStore();
 
   return (
     <>
@@ -970,6 +970,19 @@ function Alerts() {
                   </Button>
                   <Button primary onClick={() => resolveInactiveAlert(a.id, true, true)}>
                     Autorizar y reactivar
+                  </Button>
+                </div>
+              )}
+              {role !== "Personal" && a.status === "Abierta" && !a.documentId && (
+                <div className="head-action">
+                  <Button
+                    primary
+                    onClick={() => {
+                      setSelectedStudentId(a.studentId);
+                      go("validation");
+                    }}
+                  >
+                    Validar estudiante
                   </Button>
                 </div>
               )}
@@ -1087,7 +1100,7 @@ function AppContent() {
       {activePage === "student" && <StudentDetail go={go} />}
       {activePage === "documents" && <Documents go={go} />}
       {activePage === "review" && <Review go={go} />}
-      {activePage === "alerts" && <Alerts />}
+      {activePage === "alerts" && <Alerts go={go} />}
       {activePage === "integrations" && <Integrations />}
       {activePage === "users" && <Users />}
     </Shell>
