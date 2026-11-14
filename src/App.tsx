@@ -89,8 +89,17 @@ function Shell({
   breadcrumb: string;
   children: ReactNode;
 }) {
-  const { toast, clearToast, alerts, logout } = useAppStore();
-  const openAlerts = alerts.filter((a) => a.status === "Abierta").length;
+  const { toast, clearToast, alerts, logout, currentUser, role } = useAppStore();
+  const [openMenu, setOpenMenu] = useState<"none" | "notif" | "user">("none");
+  const openAlerts = alerts.filter((a) => a.status === "Abierta");
+  const firstName = (currentUser?.name ?? "Usuario").split(" ")[0];
+  const initials = (currentUser?.name ?? role)
+    .split(" ")
+    .slice(0, 2)
+    .map((p) => p[0])
+    .join("")
+    .toUpperCase();
+
   return (
     <div className="app-shell">
       <Sidebar page={page} go={go} />
@@ -102,18 +111,108 @@ function Shell({
             <strong>{breadcrumb}</strong>
           </div>
           <div className="topbar-actions">
-            <button type="button" className="icon-btn" onClick={() => go("alerts")} aria-label="Alertas">
-              <Icon name="bell" />
-              {openAlerts > 0 && <span className="notif-dot" />}
-            </button>
-            <Button
-              onClick={() => {
-                logout();
-                go("login");
-              }}
-            >
-              Cerrar sesión
-            </Button>
+            <div className="menu-anchor">
+              <button
+                type="button"
+                className="icon-btn"
+                onClick={() => setOpenMenu(openMenu === "notif" ? "none" : "notif")}
+                aria-label="Notificaciones"
+              >
+                <Icon name="bell" />
+                {openAlerts.length > 0 && <span className="notif-dot" />}
+              </button>
+              {openMenu === "notif" && (
+                <div className="dropdown-panel">
+                  <div className="dropdown-head">
+                    <span>Notificaciones</span>
+                    <Badge tone={openAlerts.length > 0 ? "amber" : "green"}>
+                      {openAlerts.length}
+                    </Badge>
+                  </div>
+                  {openAlerts.length === 0 ? (
+                    <p className="sub">No tienes notificaciones pendientes.</p>
+                  ) : (
+                    <div className="stack">
+                      {openAlerts.slice(0, 3).map((a) => (
+                        <button
+                          type="button"
+                          key={a.id}
+                          className="dropdown-item"
+                          onClick={() => {
+                            setOpenMenu("none");
+                            go("alerts");
+                          }}
+                        >
+                          <div>
+                            <strong>{a.title}</strong>
+                            <div className="sub">{a.studentName}</div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    className="dropdown-item"
+                    style={{ marginTop: 8, borderTop: "1px solid #f1f5f9", paddingTop: 10 }}
+                    onClick={() => {
+                      setOpenMenu("none");
+                      go("alerts");
+                    }}
+                  >
+                    <strong>Ver todas las alertas</strong>
+                    <Icon name="chevron" size={14} />
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <span className="topbar-divider" />
+
+            <div className="menu-anchor">
+              <button
+                type="button"
+                className="user-trigger"
+                onClick={() => setOpenMenu(openMenu === "user" ? "none" : "user")}
+              >
+                <div className="user-trigger-text">
+                  <strong>Hola, {firstName}</strong>
+                  <small>{role}</small>
+                </div>
+                <span className="avatar-circle">{initials}</span>
+                <Icon name="down" size={14} />
+              </button>
+              {openMenu === "user" && (
+                <div className="dropdown-panel narrow">
+                  <div className="dropdown-head">
+                    <div>
+                      <div>{currentUser?.name}</div>
+                      <small className="sub">{currentUser?.email}</small>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    className="dropdown-item"
+                    onClick={() => {
+                      setOpenMenu("none");
+                    }}
+                  >
+                    Configuración de usuario
+                  </button>
+                  <button
+                    type="button"
+                    className="dropdown-item danger"
+                    onClick={() => {
+                      setOpenMenu("none");
+                      logout();
+                      go("login");
+                    }}
+                  >
+                    Cerrar sesión
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </header>
         <SprintBar go={go} />
@@ -140,13 +239,15 @@ function Login({ go }: { go: (p: Page) => void }) {
 
   return (
     <div className="login-page">
-      <section className="login-brand">
+      <section className="login-story">
         <Brand large />
-        <h1>Gestión documental automatizada para asesoría académica</h1>
-        <p>
-          Centraliza los expedientes de WhatsApp Business, clasifica documentos con IA y resguarda
-          cada archivo en Google Drive con trazabilidad completa.
-        </p>
+        <div className="login-copy">
+          <h1>Gestión documental automatizada para asesoría académica</h1>
+          <p>
+            Centraliza los expedientes de WhatsApp Business, clasifica documentos con IA y resguarda
+            cada archivo en Google Drive con trazabilidad completa.
+          </p>
+        </div>
       </section>
       <section className="login-access">
         {mode === "login" ? (
