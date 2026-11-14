@@ -43,3 +43,9 @@ Respetar estrictamente la paleta de colores definida en `src/index.css`:
 ## 7. Copy y redacción en la UI (No ser literal)
 - **No copiar literalmente** las instrucciones o términos técnicos del usuario en la interfaz web (ej. evitar textos como *"Demostración"*, *"Datos ficticios. Sin conexiones reales"*, *"Entorno de demostración"*).
 - Redactar siempre **textos naturales, profesionales y orientados al usuario final** de Andino Education Group.
+
+## 8. Leyes de Gestalt y Armonía Visual
+- **Simetría y Armonía**: Botones con altura (`36px`), padding (`0 14px`) y alineación uniformes; grillas balanceadas.
+- **Cierre y Región Común**: Definir claramente dónde empieza y termina cada bloque/tarjeta (borde `#e2e8f0`, fondo `#ffffff`, `border-radius` y `padding` consistentes).
+- **Proximidad**: Agrupar elementos relacionados (título + subtítulo, acciones juntas) con `gap` consistente y separar secciones distintas.
+- **Proporción**: Evitar tarjetas estiradas con espacio vacío innecesario (`align-items: start` en grillas).
