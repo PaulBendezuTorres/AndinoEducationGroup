@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import {
   initialAlerts,
   initialDocuments,
@@ -80,16 +80,41 @@ interface AppStoreValue {
 
 const AppStoreContext = createContext<AppStoreValue | null>(null);
 
+const STORAGE_KEY = "andino_app_state_v1";
+
+function loadStoredState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
 export function AppStoreProvider({ children }: { children: ReactNode }) {
-  const [users, setUsers] = useState<AppUser[]>(initialUsers);
-  const [currentUser, setCurrentUser] = useState<AppUser | null>(initialUsers[0]);
-  const [role, setRole] = useState<Role>("Administrador");
-  const [students, setStudents] = useState<Student[]>(initialStudents);
-  const [documents, setDocuments] = useState<DocumentItem[]>(initialDocuments);
-  const [alerts, setAlerts] = useState<AlertItem[]>(initialAlerts);
+  const saved = loadStoredState();
+  const [users, setUsers] = useState<AppUser[]>(saved?.users ?? initialUsers);
+  const [currentUser, setCurrentUser] = useState<AppUser | null>(
+    saved && "currentUser" in saved ? saved.currentUser : initialUsers[0],
+  );
+  const [role, setRole] = useState<Role>(saved?.role ?? "Administrador");
+  const [students, setStudents] = useState<Student[]>(saved?.students ?? initialStudents);
+  const [documents, setDocuments] = useState<DocumentItem[]>(saved?.documents ?? initialDocuments);
+  const [alerts, setAlerts] = useState<AlertItem[]>(saved?.alerts ?? initialAlerts);
   const [selectedStudentId, setSelectedStudentId] = useState<string>("est-1");
   const [selectedDocId, setSelectedDocId] = useState<string>("doc-3");
   const [toast, setToast] = useState<{ text: string; tone: "ok" | "warn" | "err" } | null>(null);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({ users, currentUser, role, students, documents, alerts }),
+      );
+    } catch {
+      // ignore quota errors
+    }
+  }, [users, currentUser, role, students, documents, alerts]);
 
   const notify = (text: string, tone: "ok" | "warn" | "err" = "ok") => {
     setToast({ text, tone });
@@ -582,6 +607,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
   };
 
   const resetAll = () => {
+    localStorage.removeItem(STORAGE_KEY);
     setStudents(initialStudents);
     setDocuments(initialDocuments);
     setAlerts(initialAlerts);
