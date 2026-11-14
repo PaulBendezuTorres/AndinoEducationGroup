@@ -991,18 +991,32 @@ function Documents({ go }: { go: (p: Page) => void }) {
 }
 
 function Review({ go }: { go: (p: Page) => void }) {
-  const { documents, selectedDocId, correctDocumentCategory } = useAppStore();
+  const { documents, students, selectedDocId, correctDocumentCategory } = useAppStore();
   const doc = documents.find((d) => d.id === selectedDocId) ?? documents[0];
   if (!doc) return null;
-  return <ReviewForm key={doc.id} doc={doc} go={go} onSave={correctDocumentCategory} />;
+  const student = students.find((s) => s.id === doc.studentId);
+  return (
+    <ReviewForm
+      key={doc.id}
+      doc={doc}
+      studentStatus={student?.status ?? "Activo"}
+      driveFolder={student?.driveFolder ?? ""}
+      go={go}
+      onSave={correctDocumentCategory}
+    />
+  );
 }
 
 function ReviewForm({
   doc,
+  studentStatus,
+  driveFolder,
   go,
   onSave,
 }: {
   doc: ReturnType<typeof useAppStore>["documents"][number];
+  studentStatus: StudentStatus;
+  driveFolder: string;
   go: (p: Page) => void;
   onSave: ReturnType<typeof useAppStore>["correctDocumentCategory"];
 }) {
@@ -1016,18 +1030,64 @@ function ReviewForm({
         back="Volver a Documentos"
         onBack={() => go("documents")}
       />
-      <div className="review-grid">
-        <Card className="preview">
-          <div className="paper">
-            <Icon name="files" size={32} />
-            <strong>{doc.fileName}</strong>
-            <p className="sub">Remitente: {doc.senderName}</p>
-            <p className="sub">Confianza IA: {doc.confidence ?? 0}%</p>
+      {studentStatus === "Inactivo" && (
+        <InfoBanner>
+          Este estudiante está en estado Inactivo. Puedes corregir la categoría, pero el guardado en
+          Drive requiere autorización desde Alertas por un Encargado o Administrador.
+        </InfoBanner>
+      )}
+      {studentStatus === "Pendiente" && (
+        <InfoBanner>
+          Este estudiante está Pendiente de validación. El almacenamiento en Drive permanecerá
+          bloqueado hasta vincular su carpeta.
+        </InfoBanner>
+      )}
+      <div className="two-col review-grid">
+        <Card>
+          <div className="card-head">
+            <h3>Vista previa del archivo</h3>
+            <Badge tone={doc.status === "Almacenado" ? "green" : "amber"}>{doc.status}</Badge>
+          </div>
+          <div className="doc-preview-box">
+            <div className="head-action">
+              <Icon name="files" size={24} />
+              <strong>{doc.fileName}</strong>
+            </div>
+            <div className="row-item">
+              <span className="sub">Remitente</span>
+              <strong>
+                {doc.senderName} ({doc.senderRole})
+              </strong>
+            </div>
+            <div className="row-item">
+              <span className="sub">Fecha de recepción</span>
+              <strong>{doc.receivedAt}</strong>
+            </div>
+            <div className="row-item">
+              <span className="sub">Sugerencia IA</span>
+              <Badge tone="blue">
+                {doc.category} · {doc.confidence ?? 0}% confianza
+              </Badge>
+            </div>
           </div>
         </Card>
+
         <Card>
-          <h3>Clasificación manual</h3>
+          <div className="card-head">
+            <h3>Clasificación manual</h3>
+            <Badge tone={statusTone(studentStatus)}>Estudiante: {studentStatus}</Badge>
+          </div>
           <div className="stack">
+            <div className="row-item">
+              <span className="sub">Estudiante</span>
+              <strong>{doc.studentName}</strong>
+            </div>
+            <div className="row-item">
+              <span className="sub">Destino en Drive</span>
+              <strong style={{ fontSize: 12.5 }}>
+                {driveFolder ? `${driveFolder} / ${category}` : "Sin carpeta vinculada"}
+              </strong>
+            </div>
             <label className="field">
               <span>Categoría documental</span>
               <select
@@ -1042,15 +1102,18 @@ function ReviewForm({
                 <option value="Visa anterior">Visa anterior</option>
               </select>
             </label>
-            <Button
-              primary
-              onClick={() => {
-                onSave(doc.id, category);
-                go("documents");
-              }}
-            >
-              Guardar como Validación humana
-            </Button>
+            <div className="head-action">
+              <Button onClick={() => go("documents")}>Cancelar</Button>
+              <Button
+                primary
+                onClick={() => {
+                  onSave(doc.id, category);
+                  go("documents");
+                }}
+              >
+                Guardar como Validación humana
+              </Button>
+            </div>
           </div>
         </Card>
       </div>
