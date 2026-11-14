@@ -1122,7 +1122,15 @@ function ReviewForm({
 }
 
 function Alerts({ go }: { go: (p: Page) => void }) {
-  const { role, alerts, resolveInactiveAlert, setSelectedStudentId } = useAppStore();
+  const { role, alerts, resolveInactiveAlert, setSelectedStudentId, setSelectedDocId } =
+    useAppStore();
+  const [tab, setTab] = useState<"Abierta" | "Resuelta" | "Todas">("Abierta");
+
+  const openCount = alerts.filter((a) => a.status === "Abierta").length;
+  const highCount = alerts.filter((a) => a.status === "Abierta" && a.priority === "Alta").length;
+  const resolvedCount = alerts.filter((a) => a.status === "Resuelta").length;
+
+  const filtered = alerts.filter((a) => tab === "Todas" || a.status === tab);
 
   return (
     <>
@@ -1130,45 +1138,132 @@ function Alerts({ go }: { go: (p: Page) => void }) {
         title="Alertas operativas"
         subtitle="Retenciones preventivas de estudiantes inactivos y validaciones pendientes."
       />
+
+      <div className="metrics-grid">
+        <Card className="metric">
+          <small>Alertas abiertas</small>
+          <strong>{openCount}</strong>
+          <span>Requieren atención</span>
+        </Card>
+        <Card className="metric">
+          <small>Prioridad alta</small>
+          <strong>{highCount}</strong>
+          <span>Documentos de inactivos</span>
+        </Card>
+        <Card className="metric">
+          <small>Resueltas</small>
+          <strong>{resolvedCount}</strong>
+          <span>Historial atendido</span>
+        </Card>
+        <Card className="metric">
+          <small>Tu nivel de acceso</small>
+          <strong style={{ fontSize: 16 }}>{role}</strong>
+          <span>{role === "Personal" ? "Consulta y revisión" : "Autorización habilitada"}</span>
+        </Card>
+      </div>
+
+      <Card className="mb-4">
+        <div className="toolbar" style={{ marginBottom: 0 }}>
+          <div className="tabs">
+            {(["Abierta", "Resuelta", "Todas"] as const).map((t) => (
+              <button
+                type="button"
+                key={t}
+                className={tab === t ? "active" : ""}
+                onClick={() => setTab(t)}
+              >
+                {t === "Abierta" ? `Abiertas (${openCount})` : t === "Resuelta" ? `Resueltas (${resolvedCount})` : `Todas (${alerts.length})`}
+              </button>
+            ))}
+          </div>
+        </div>
+      </Card>
+
       <div className="stack">
-        {alerts.map((a) => (
-          <Card key={a.id}>
-            <div className="reactivation">
-              <div>
-                <div className="head-action">
-                  <Badge tone={a.priority === "Alta" ? "amber" : "blue"}>{a.priority}</Badge>
-                  <Badge tone={a.status === "Abierta" ? "amber" : "green"}>{a.status}</Badge>
-                </div>
-                <h3>{a.title}</h3>
-                <p className="sub">{a.description}</p>
-                <small className="sub">{a.createdAt}</small>
-              </div>
-              {role !== "Personal" && a.status === "Abierta" && a.documentId && (
-                <div className="head-action">
-                  <Button onClick={() => resolveInactiveAlert(a.id, true, false)}>
-                    Autorizar solo documento
-                  </Button>
-                  <Button primary onClick={() => resolveInactiveAlert(a.id, true, true)}>
-                    Autorizar y reactivar
-                  </Button>
-                </div>
-              )}
-              {role !== "Personal" && a.status === "Abierta" && !a.documentId && (
-                <div className="head-action">
-                  <Button
-                    primary
-                    onClick={() => {
-                      setSelectedStudentId(a.studentId);
-                      go("validation");
-                    }}
-                  >
-                    Validar estudiante
-                  </Button>
-                </div>
-              )}
-            </div>
+        {filtered.length === 0 ? (
+          <Card>
+            <p className="sub">No hay alertas en esta categoría.</p>
           </Card>
-        ))}
+        ) : (
+          filtered.map((a) => {
+            const borderColor =
+              a.status === "Resuelta"
+                ? "#16a34a"
+                : a.priority === "Alta"
+                  ? "#d97706"
+                  : "#2b5bf5";
+            return (
+              <Card key={a.id} className="alert-card">
+                <div
+                  className="reactivation"
+                  style={{ borderLeft: `4px solid ${borderColor}`, paddingLeft: 14 }}
+                >
+                  <div>
+                    <div className="head-action">
+                      <Badge tone={a.priority === "Alta" ? "amber" : "blue"}>
+                        Prioridad {a.priority}
+                      </Badge>
+                      <Badge tone={a.status === "Abierta" ? "amber" : "green"}>{a.status}</Badge>
+                      <span className="sub">· {a.studentName}</span>
+                    </div>
+                    <h3>{a.title}</h3>
+                    <p className="sub">{a.description}</p>
+                    <small className="sub">{a.createdAt}</small>
+                  </div>
+
+                  {a.status === "Abierta" && role !== "Personal" && a.documentId && (
+                    <div className="head-action">
+                      <Button
+                        onClick={() => {
+                          setSelectedDocId(a.documentId!);
+                          go("review");
+                        }}
+                      >
+                        Revisar archivo
+                      </Button>
+                      <Button onClick={() => resolveInactiveAlert(a.id, true, false)}>
+                        Autorizar solo documento
+                      </Button>
+                      <Button primary onClick={() => resolveInactiveAlert(a.id, true, true)}>
+                        Autorizar y reactivar
+                      </Button>
+                    </div>
+                  )}
+
+                  {a.status === "Abierta" && role !== "Personal" && !a.documentId && (
+                    <div className="head-action">
+                      <Button
+                        primary
+                        onClick={() => {
+                          setSelectedStudentId(a.studentId);
+                          go("validation");
+                        }}
+                      >
+                        Validar estudiante
+                      </Button>
+                    </div>
+                  )}
+
+                  {a.status === "Abierta" && role === "Personal" && (
+                    <div className="head-action">
+                      {a.documentId && (
+                        <Button
+                          onClick={() => {
+                            setSelectedDocId(a.documentId!);
+                            go("review");
+                          }}
+                        >
+                          Revisar archivo
+                        </Button>
+                      )}
+                      <Badge tone="gray">Requiere Encargado para autorizar</Badge>
+                    </div>
+                  )}
+                </div>
+              </Card>
+            );
+          })
+        )}
       </div>
     </>
   );
