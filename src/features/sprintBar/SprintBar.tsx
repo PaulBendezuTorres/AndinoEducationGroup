@@ -21,7 +21,11 @@ export function SprintBar({ page, go }: { page: Page; go: (page: Page) => void }
   const hasActions = (isStudents && role !== "Personal") || isDocs || isAlerts;
   if (!hasActions) return null;
 
-  const inactiveStudent = students.find((s) => s.status === "Inactivo");
+  const inactiveStudents = students.filter((s) => s.status === "Inactivo");
+  const pickRandomInactive = () =>
+    inactiveStudents.length > 0
+      ? inactiveStudents[Math.floor(Math.random() * inactiveStudents.length)]
+      : undefined;
   const pickRandomStudent = () =>
     students.length > 0 ? students[Math.floor(Math.random() * students.length)] : undefined;
 
@@ -80,8 +84,9 @@ export function SprintBar({ page, go }: { page: Page; go: (page: Page) => void }
       {isAlerts && (
         <Button
           onClick={() => {
-            if (inactiveStudent) {
-              simulateFileUpload(inactiveStudent.id, "Estudiante", "certificado_inactivo.pdf");
+            const target = pickRandomInactive();
+            if (target) {
+              simulateFileUpload(target.id, "Estudiante");
             }
           }}
         >
