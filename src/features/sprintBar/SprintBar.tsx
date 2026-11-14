@@ -9,6 +9,7 @@ export function SprintBar({ page, go }: { page: Page; go: (page: Page) => void }
     students,
     selectedStudentId,
     simulateWhatsAppGroup,
+    simulateRandomStudent,
     simulateFileUpload,
     resetAll,
   } = useAppStore();
@@ -38,14 +39,17 @@ export function SprintBar({ page, go }: { page: Page; go: (page: Page) => void }
       <span className="sprint-bar-label">Acciones rápidas:</span>
 
       {isStudents && role !== "Personal" && (
-        <Button
-          onClick={() => {
-            simulateWhatsAppGroup();
-            go("validation");
-          }}
-        >
-          + Grupo WhatsApp detectado
-        </Button>
+        <>
+          <Button
+            onClick={() => {
+              simulateWhatsAppGroup();
+              go("validation");
+            }}
+          >
+            + Grupo WhatsApp detectado
+          </Button>
+          <Button onClick={simulateRandomStudent}>+ Agregar estudiante</Button>
+        </>
       )}
 
       {isDocs && (

@@ -52,6 +52,7 @@ interface AppStoreValue {
   clearToast: () => void;
   // Sprint 1
   simulateWhatsAppGroup: (custom?: { name?: string; phone?: string; whatsappGroup?: string }) => void;
+  simulateRandomStudent: () => void;
   confirmAndActivateStudent: (
     id: string,
     payload: {
@@ -221,6 +222,77 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       ...prev,
     ]);
     notify(`Grupo detectado: ${name} registrado como Pendiente.`, "ok");
+  };
+
+  const simulateRandomStudent = () => {
+    const statuses: Student["status"][] = ["Pendiente", "Activo", "Inactivo"];
+    const status = statuses[Math.floor(Math.random() * statuses.length)];
+    const names = [
+      "Renata Paredes",
+      "Joaquín Navarro",
+      "Mariana Quispe",
+      "Tomás Herrera",
+      "Alejandra Díaz",
+      "Nicolás Vega",
+    ];
+    const name = names[Math.floor(Math.random() * names.length)];
+    const phone = `+51 9${Math.floor(10000000 + Math.random() * 89999999)}`.replace(
+      /(\+51 \d{3})(\d{3})(\d{3})/,
+      "$1 $2 $3",
+    );
+    const ts = nowFormatted();
+    const id = `est-${Date.now()}`;
+    const hasDrive = status !== "Pendiente";
+    const driveFolder = hasDrive ? `Andino Drive / Estudiantes / ${name}` : "";
+    const email = hasDrive ? `${name.toLowerCase().replace(/\s+/g, ".")}@gmail.com` : "";
+
+    const newStudent: Student = {
+      id,
+      name,
+      email,
+      phone,
+      destination: hasDrive ? "Australia — Maestría en Educación" : "Australia — Por definir",
+      whatsappGroup: `Andino | ${name}`,
+      driveFolder,
+      status,
+      createdAt: ts,
+      participants: [
+        { id: `p-${Date.now()}-1`, name, phone, role: "Estudiante" },
+        { id: `p-${Date.now()}-2`, name: "Luis Vega", phone: "+51 998 320 110", role: "Personal de Andino" },
+      ],
+      timeline: [
+        {
+          id: `ev-${Date.now()}`,
+          timestamp: ts,
+          action: status === "Pendiente" ? "Grupo detectado" : `Estudiante ${status}`,
+          actor: status === "Pendiente" ? "WhatsApp Business" : role,
+          detail:
+            status === "Pendiente"
+              ? `Ficha creada en estado Pendiente. Falta validar datos y vincular Drive.`
+              : `Estudiante registrado en estado ${status} con carpeta Drive vinculada.`,
+        },
+      ],
+    };
+
+    setStudents((prev) => [newStudent, ...prev]);
+    setSelectedStudentId(id);
+
+    if (status === "Pendiente") {
+      setAlerts((prev) => [
+        {
+          id: `al-${Date.now()}`,
+          studentId: id,
+          studentName: name,
+          title: "Nuevo estudiante pendiente",
+          description: `Se detectó el grupo Andino | ${name}. Valida sus datos y vincula su carpeta de Drive.`,
+          priority: "Media",
+          status: "Abierta",
+          createdAt: ts,
+        },
+        ...prev,
+      ]);
+    }
+    notify(`Estudiante agregado: ${name} (${status}).`, "ok");
   };
 
   const confirmAndActivateStudent: AppStoreValue["confirmAndActivateStudent"] = (id, payload) => {
@@ -637,6 +709,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
         toast,
         clearToast,
         simulateWhatsAppGroup,
+        simulateRandomStudent,
         confirmAndActivateStudent,
         simulateFileUpload,
         correctDocumentCategory,
