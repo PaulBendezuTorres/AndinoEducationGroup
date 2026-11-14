@@ -1336,3 +1336,19 @@ dd {
     max-width: none;
   }
 }
+
+/* Fix layout overlap & select width */
+.main-area {
+  flex: 1;
+  min-width: 0;
+  margin-left: 224px;
+}
+.select-input {
+  width: auto;
+  max-width: 100%;
+}
+@media (max-width: 1024px) {
+  .main-area {
+    margin-left: 0;
+  }
+}
