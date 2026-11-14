@@ -343,7 +343,8 @@ function Login({ go }: { go: (p: Page) => void }) {
 }
 
 function Home({ go }: { go: (p: Page) => void }) {
-  const { students, documents, alerts, setSelectedStudentId, setSelectedDocId } = useAppStore();
+  const { role, students, documents, alerts, setSelectedStudentId, setSelectedDocId } =
+    useAppStore();
   const pendingDocs = documents.filter((d) => d.status === "Pendiente de revisión");
   const storedDocs = documents.filter((d) => d.status === "Almacenado");
   const openAlerts = alerts.filter((a) => a.status === "Abierta");
@@ -410,14 +411,18 @@ function Home({ go }: { go: (p: Page) => void }) {
                     </td>
                     <td>{s.driveFolder || "Sin vincular"}</td>
                     <td>
-                      <Button
-                        onClick={() => {
-                          setSelectedStudentId(s.id);
-                          go(s.status === "Pendiente" ? "validation" : "student");
-                        }}
-                      >
-                        {s.status === "Pendiente" ? "Validar" : "Ver ficha"}
-                      </Button>
+                      {s.status === "Pendiente" && role === "Personal" ? (
+                        <Badge tone="amber">Requiere Encargado</Badge>
+                      ) : (
+                        <Button
+                          onClick={() => {
+                            setSelectedStudentId(s.id);
+                            go(s.status === "Pendiente" ? "validation" : "student");
+                          }}
+                        >
+                          {s.status === "Pendiente" ? "Validar" : "Ver ficha"}
+                        </Button>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -462,7 +467,7 @@ function Home({ go }: { go: (p: Page) => void }) {
 }
 
 function Students({ go }: { go: (p: Page) => void }) {
-  const { students, setSelectedStudentId, simulateWhatsAppGroup } = useAppStore();
+  const { role, students, setSelectedStudentId, simulateWhatsAppGroup } = useAppStore();
   const [filter, setFilter] = useState<"Todos" | StudentStatus>("Todos");
   const [query, setQuery] = useState("");
 
@@ -483,15 +488,17 @@ function Students({ go }: { go: (p: Page) => void }) {
         title="Estudiantes"
         subtitle="Listado de expedientes detectados desde WhatsApp Business."
         action={
-          <Button
-            primary
-            onClick={() => {
-              simulateWhatsAppGroup();
-              go("validation");
-            }}
-          >
-            + Nuevo grupo WhatsApp
-          </Button>
+          role !== "Personal" ? (
+            <Button
+              primary
+              onClick={() => {
+                simulateWhatsAppGroup();
+                go("validation");
+              }}
+            >
+              + Nuevo grupo WhatsApp
+            </Button>
+          ) : undefined
         }
       />
       <Card>
@@ -542,14 +549,18 @@ function Students({ go }: { go: (p: Page) => void }) {
                     <Badge tone={statusTone(s.status)}>{s.status}</Badge>
                   </td>
                   <td>
-                    <Button
-                      onClick={() => {
-                        setSelectedStudentId(s.id);
-                        go(s.status === "Pendiente" ? "validation" : "student");
-                      }}
-                    >
-                      {s.status === "Pendiente" ? "Validar" : "Abrir ficha"}
-                    </Button>
+                    {s.status === "Pendiente" && role === "Personal" ? (
+                      <Badge tone="amber">Requiere Encargado</Badge>
+                    ) : (
+                      <Button
+                        onClick={() => {
+                          setSelectedStudentId(s.id);
+                          go(s.status === "Pendiente" ? "validation" : "student");
+                        }}
+                      >
+                        {s.status === "Pendiente" ? "Validar" : "Abrir ficha"}
+                      </Button>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -1029,7 +1040,10 @@ function AppContent() {
   if (!currentUser || page === "login") return <Login go={go} />;
 
   const activePage: Page =
-    role !== "Administrador" && (page === "integrations" || page === "users") ? "home" : page;
+    (role !== "Administrador" && (page === "integrations" || page === "users")) ||
+    (role === "Personal" && page === "validation")
+      ? "home"
+      : page;
 
   const titles: Record<Page, string> = {
     login: "Acceso",
