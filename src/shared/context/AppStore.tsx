@@ -34,6 +34,10 @@ function guessCategory(fileName: string): { category: DocCategory; confidence: n
 }
 
 interface AppStoreValue {
+  currentUser: AppUser | null;
+  login: (email: string, password: string) => { ok: boolean; error?: string };
+  logout: () => void;
+  recoverPassword: (email: string) => { ok: boolean; message: string };
   role: Role;
   setRole: (role: Role) => void;
   students: Student[];
@@ -77,11 +81,12 @@ interface AppStoreValue {
 const AppStoreContext = createContext<AppStoreValue | null>(null);
 
 export function AppStoreProvider({ children }: { children: ReactNode }) {
+  const [users, setUsers] = useState<AppUser[]>(initialUsers);
+  const [currentUser, setCurrentUser] = useState<AppUser | null>(initialUsers[0]);
   const [role, setRole] = useState<Role>("Administrador");
   const [students, setStudents] = useState<Student[]>(initialStudents);
   const [documents, setDocuments] = useState<DocumentItem[]>(initialDocuments);
   const [alerts, setAlerts] = useState<AlertItem[]>(initialAlerts);
-  const [users, setUsers] = useState<AppUser[]>(initialUsers);
   const [selectedStudentId, setSelectedStudentId] = useState<string>("est-1");
   const [selectedDocId, setSelectedDocId] = useState<string>("doc-3");
   const [toast, setToast] = useState<{ text: string; tone: "ok" | "warn" | "err" } | null>(null);
@@ -91,6 +96,40 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
   };
 
   const clearToast = () => setToast(null);
+
+  const login: AppStoreValue["login"] = (email, password) => {
+    const cleanEmail = email.trim().toLowerCase();
+    const found = users.find((u) => u.email.toLowerCase() === cleanEmail);
+    if (!found) {
+      return { ok: false, error: "Correo no registrado en el sistema." };
+    }
+    if (!found.active) {
+      return { ok: false, error: "Tu usuario está suspendido. Contacta al Administrador." };
+    }
+    if (password.trim().length < 4) {
+      return { ok: false, error: "Ingresa una contraseña válida (mínimo 4 caracteres)." };
+    }
+    setCurrentUser(found);
+    setRole(found.role);
+    notify(`Bienvenido, ${found.name} (${found.role}).`, "ok");
+    return { ok: true };
+  };
+
+  const logout = () => {
+    setCurrentUser(null);
+  };
+
+  const recoverPassword: AppStoreValue["recoverPassword"] = (email) => {
+    const cleanEmail = email.trim().toLowerCase();
+    const found = users.find((u) => u.email.toLowerCase() === cleanEmail);
+    if (!found) {
+      return { ok: false, message: "No encontramos una cuenta con ese correo." };
+    }
+    return {
+      ok: true,
+      message: `Se enviaron las instrucciones de recuperación a ${found.email}.`,
+    };
+  };
 
   const simulateWhatsAppGroup = () => {
     const idx = students.length + 1;
@@ -539,6 +578,10 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
   return (
     <AppStoreContext.Provider
       value={{
+        currentUser,
+        login,
+        logout,
+        recoverPassword,
         role,
         setRole,
         students,

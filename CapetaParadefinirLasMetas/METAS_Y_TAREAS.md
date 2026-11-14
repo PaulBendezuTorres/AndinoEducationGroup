@@ -34,3 +34,15 @@
 - [x] `HU17`: Panel consolidado con métricas (total estudiantes, procesados, pendientes de revisión, alertas abiertas).
 - [x] `HU18`: Filtros instantáneos por estado (`Todos`, `Pendiente`, `Activo`, `Inactivo`) y búsqueda en tiempo real.
 - [x] Selector rápido de rol (`Administrador`, `Encargado`, `Personal`) que habilite o restrinja acciones según permisos.
+
+## Meta 6: Autenticación, Sesión y Recuperación de Contraseña
+- [x] Pantalla de Login funcional con usuarios reales (`Administrador`, `Encargado`, `Personal`) y validación de credenciales.
+- [x] Flujo de **Recuperar contraseña** en el Login (solicitud por correo y confirmación).
+- [x] Botón de **Cerrar sesión** en la esquina superior derecha del topbar para volver al Login.
+
+## Meta 7: Restricciones estrictas por Rol y Notificaciones
+- [x] Puntito rojo en la campana de notificaciones (esquina superior derecha) cuando existan alertas abiertas.
+- [x] Separación estricta de permisos en la UI:
+  - `Personal`: solo consulta expedientes/documentos y corrige clasificaciones pendientes (sin validar/activar/desactivar estudiantes ni autorizar alertas de inactivos).
+  - `Encargado`: valida estudiantes, vincula Drive, activa/desactiva y autoriza inactivos (sin acceso a Usuarios ni Integraciones).
+  - `Administrador`: acceso completo.

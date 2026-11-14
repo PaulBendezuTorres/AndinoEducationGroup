@@ -30,7 +30,7 @@ function statusTone(status: StudentStatus): "green" | "amber" | "gray" {
 }
 
 function Sidebar({ page, go }: { page: Page; go: (page: Page) => void }) {
-  const { role, alerts } = useAppStore();
+  const { role, alerts, currentUser } = useAppStore();
   const openAlerts = alerts.filter((a) => a.status === "Abierta").length;
   const active =
     page === "validation" || page === "student"
@@ -67,9 +67,9 @@ function Sidebar({ page, go }: { page: Page; go: (page: Page) => void }) {
       </nav>
       <div className="side-bottom">
         <div className="account">
-          <span>{role.slice(0, 2).toUpperCase()}</span>
+          <span>{(currentUser?.name ?? role).slice(0, 2).toUpperCase()}</span>
           <div>
-            <strong>Carolina Ríos</strong>
+            <strong>{currentUser?.name ?? "Usuario"}</strong>
             <small>{role}</small>
           </div>
         </div>
@@ -89,7 +89,8 @@ function Shell({
   breadcrumb: string;
   children: ReactNode;
 }) {
-  const { toast, clearToast } = useAppStore();
+  const { toast, clearToast, alerts, logout } = useAppStore();
+  const openAlerts = alerts.filter((a) => a.status === "Abierta").length;
   return (
     <div className="app-shell">
       <Sidebar page={page} go={go} />
@@ -103,7 +104,16 @@ function Shell({
           <div className="topbar-actions">
             <button type="button" className="icon-btn" onClick={() => go("alerts")} aria-label="Alertas">
               <Icon name="bell" />
+              {openAlerts > 0 && <span className="notif-dot" />}
             </button>
+            <Button
+              onClick={() => {
+                logout();
+                go("login");
+              }}
+            >
+              Cerrar sesión
+            </Button>
           </div>
         </header>
         <SprintBar go={go} />
@@ -122,6 +132,12 @@ function Shell({
 }
 
 function Login({ go }: { go: (p: Page) => void }) {
+  const { login, recoverPassword } = useAppStore();
+  const [mode, setMode] = useState<"login" | "recover">("login");
+  const [email, setEmail] = useState("carolina@andino.edu");
+  const [password, setPassword] = useState("andino2026");
+  const [feedback, setFeedback] = useState<{ text: string; ok: boolean } | null>(null);
+
   return (
     <div className="login-page">
       <section className="login-brand">
@@ -133,26 +149,95 @@ function Login({ go }: { go: (p: Page) => void }) {
         </p>
       </section>
       <section className="login-access">
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            go("home");
-          }}
-        >
-          <h2>Iniciar sesión</h2>
-          <p className="login-sub">Accede a la gestión documental de Andino.</p>
-          <label>
-            Correo electrónico
-            <input type="email" defaultValue="carolina@andino.edu" />
-          </label>
-          <label>
-            Contraseña
-            <input type="password" defaultValue="••••••••" />
-          </label>
-          <Button primary type="submit">
-            Ingresar al panel
-          </Button>
-        </form>
+        {mode === "login" ? (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const res = login(email, password);
+              if (res.ok) {
+                setFeedback(null);
+                go("home");
+              } else {
+                setFeedback({ text: res.error ?? "Error al iniciar sesión.", ok: false });
+              }
+            }}
+          >
+            <h2>Iniciar sesión</h2>
+            <p className="login-sub">Accede a la gestión documental de Andino.</p>
+            <label>
+              Correo electrónico
+              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+            </label>
+            <label>
+              Contraseña
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </label>
+            {feedback && (
+              <p className="sub" style={{ color: feedback.ok ? "#15803d" : "#b91c1c" }}>
+                {feedback.text}
+              </p>
+            )}
+            <Button primary type="submit">
+              Ingresar al panel
+            </Button>
+            <div className="head-action" style={{ marginTop: 12 }}>
+              <button
+                type="button"
+                className="back-link"
+                onClick={() => {
+                  setFeedback(null);
+                  setMode("recover");
+                }}
+              >
+                ¿Olvidaste tu contraseña?
+              </button>
+            </div>
+            <div className="sub" style={{ marginTop: 14 }}>
+              Cuentas: carolina@andino.edu (Admin) · luis.vega@andino.edu (Encargado) ·
+              valeria.q@andino.edu (Personal)
+            </div>
+          </form>
+        ) : (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const res = recoverPassword(email);
+              setFeedback({ text: res.message, ok: res.ok });
+            }}
+          >
+            <h2>Recuperar contraseña</h2>
+            <p className="login-sub">Ingresa tu correo para restablecer tu acceso.</p>
+            <label>
+              Correo electrónico
+              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+            </label>
+            {feedback && (
+              <p className="sub" style={{ color: feedback.ok ? "#15803d" : "#b91c1c" }}>
+                {feedback.text}
+              </p>
+            )}
+            <Button primary type="submit">
+              Enviar instrucciones
+            </Button>
+            <div className="head-action" style={{ marginTop: 12 }}>
+              <button
+                type="button"
+                className="back-link"
+                onClick={() => {
+                  setFeedback(null);
+                  setMode("login");
+                }}
+              >
+                Volver a iniciar sesión
+              </button>
+            </div>
+          </form>
+        )}
       </section>
     </div>
   );
@@ -483,6 +568,7 @@ function Validation({ go }: { go: (p: Page) => void }) {
 
 function StudentDetail({ go }: { go: (p: Page) => void }) {
   const {
+    role,
     students,
     documents,
     selectedStudentId,
@@ -507,7 +593,7 @@ function StudentDetail({ go }: { go: (p: Page) => void }) {
             <Button onClick={() => simulateFileUpload(student.id, "Estudiante")}>
               + Recibir archivo
             </Button>
-            {student.status === "Activo" && (
+            {role !== "Personal" && student.status === "Activo" && (
               <Button danger onClick={() => deactivateStudent(student.id)}>
                 Pasar a Inactivo
               </Button>
@@ -725,7 +811,7 @@ function Review({ go }: { go: (p: Page) => void }) {
 }
 
 function Alerts() {
-  const { alerts, resolveInactiveAlert } = useAppStore();
+  const { role, alerts, resolveInactiveAlert } = useAppStore();
 
   return (
     <>
@@ -746,7 +832,7 @@ function Alerts() {
                 <p className="sub">{a.description}</p>
                 <small className="sub">{a.createdAt}</small>
               </div>
-              {a.status === "Abierta" && a.documentId && (
+              {role !== "Personal" && a.status === "Abierta" && a.documentId && (
                 <div className="head-action">
                   <Button onClick={() => resolveInactiveAlert(a.id, true, false)}>
                     Autorizar solo documento
@@ -838,9 +924,10 @@ function Users() {
 }
 
 function AppContent() {
+  const { currentUser } = useAppStore();
   const [page, setPage] = useState<Page>("home");
 
-  if (page === "login") return <Login go={setPage} />;
+  if (!currentUser || page === "login") return <Login go={setPage} />;
 
   const titles: Record<Page, string> = {
     login: "Acceso",
