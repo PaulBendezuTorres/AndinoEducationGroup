@@ -18,30 +18,36 @@ const pathToPage: Record<string, Page> = Object.fromEntries(
   Object.entries(pageToPath).map(([page, path]) => [path, page as Page]),
 ) as Record<string, Page>;
 
-function resolvePageFromPath(pathname: string): Page {
-  const clean = pathname.replace(/\/+$/, "") || "/";
+function getCurrentRoutePath() {
+  const hash = window.location.hash.replace(/^#/, "");
+  if (hash) return hash.replace(/\/+$/, "") || "/";
+  return window.location.pathname.replace(/\/+$/, "") || "/";
+}
+
+function resolvePageFromLocation(): Page {
+  const clean = getCurrentRoutePath();
   if (clean === "/") return "home";
   return pathToPage[clean] ?? "home";
 }
 
 export function useAppRouter(isAuthenticated: boolean) {
   const [page, setPage] = useState<Page>(() =>
-    isAuthenticated ? resolvePageFromPath(window.location.pathname) : "login",
+    isAuthenticated ? resolvePageFromLocation() : "login",
   );
 
   useEffect(() => {
-    const onPopState = () => {
-      setPage(isAuthenticated ? resolvePageFromPath(window.location.pathname) : "login");
+    const onHashChange = () => {
+      setPage(isAuthenticated ? resolvePageFromLocation() : "login");
     };
-    window.addEventListener("popstate", onPopState);
-    return () => window.removeEventListener("popstate", onPopState);
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
   }, [isAuthenticated]);
 
   useEffect(() => {
     const targetPage = isAuthenticated ? (page === "login" ? "home" : page) : "login";
-    const targetPath = pageToPath[targetPage];
-    if (window.location.pathname !== targetPath) {
-      window.history.replaceState(null, "", targetPath);
+    const targetHash = `#${pageToPath[targetPage]}`;
+    if (window.location.hash !== targetHash) {
+      window.history.replaceState(null, "", targetHash);
     }
     if (targetPage !== page) {
       setPage(targetPage);
@@ -49,9 +55,9 @@ export function useAppRouter(isAuthenticated: boolean) {
   }, [isAuthenticated, page]);
 
   const go = useCallback((next: Page) => {
-    const targetPath = pageToPath[next];
-    if (window.location.pathname !== targetPath) {
-      window.history.pushState(null, "", targetPath);
+    const targetHash = `#${pageToPath[next]}`;
+    if (window.location.hash !== targetHash) {
+      window.location.hash = targetHash;
     }
     setPage(next);
   }, []);

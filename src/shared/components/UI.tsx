@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-const A = "/assets";
+const A = `${import.meta.env.BASE_URL}assets`;
 
 export const icons = {
   home: "0bd12.svg",
