@@ -12,7 +12,7 @@ export function SprintBar({ page, go }: { page: Page; go: (page: Page) => void }
     simulateFileUpload,
     resetAll,
   } = useAppStore();
-  const [visible, setVisible] = useState(true);
+  const [visible, setVisible] = useState(false);
 
   const isStudents = page === "students" || page === "validation" || page === "student";
   const isDocs = page === "documents" || page === "review";
