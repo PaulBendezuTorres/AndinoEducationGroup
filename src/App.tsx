@@ -470,6 +470,9 @@ function Students({ go }: { go: (p: Page) => void }) {
   const { role, students, setSelectedStudentId, simulateWhatsAppGroup } = useAppStore();
   const [filter, setFilter] = useState<"Todos" | StudentStatus>("Todos");
   const [query, setQuery] = useState("");
+  const [showNewForm, setShowNewForm] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newPhone, setNewPhone] = useState("");
 
   const filtered = students.filter((s) => {
     const matchesStatus = filter === "Todos" || s.status === filter;
@@ -489,18 +492,57 @@ function Students({ go }: { go: (p: Page) => void }) {
         subtitle="Listado de expedientes detectados desde WhatsApp Business."
         action={
           role !== "Personal" ? (
-            <Button
-              primary
-              onClick={() => {
-                simulateWhatsAppGroup();
-                go("validation");
-              }}
-            >
-              + Nuevo grupo WhatsApp
+            <Button primary onClick={() => setShowNewForm((v) => !v)}>
+              {showNewForm ? "Cancelar" : "+ Nuevo grupo WhatsApp"}
             </Button>
           ) : undefined
         }
       />
+      {showNewForm && role !== "Personal" && (
+        <Card className="mb-4">
+          <div className="card-head">
+            <h3>Registrar nuevo grupo de WhatsApp</h3>
+          </div>
+          <div className="two-col">
+            <Field
+              label="Nombre del estudiante"
+              value={newName}
+              onChange={setNewName}
+              placeholder="Ej. Rodrigo Chávez (opcional: autogenerar)"
+            />
+            <Field
+              label="Teléfono WhatsApp"
+              value={newPhone}
+              onChange={setNewPhone}
+              placeholder="Ej. +51 988 123 456 (opcional)"
+            />
+          </div>
+          <div className="head-action" style={{ marginTop: 12 }}>
+            <Button
+              primary
+              onClick={() => {
+                simulateWhatsAppGroup({ name: newName, phone: newPhone });
+                setNewName("");
+                setNewPhone("");
+                setShowNewForm(false);
+                go("validation");
+              }}
+            >
+              Crear y validar ahora
+            </Button>
+            <Button
+              onClick={() => {
+                simulateWhatsAppGroup({ name: newName, phone: newPhone });
+                setNewName("");
+                setNewPhone("");
+                setShowNewForm(false);
+              }}
+            >
+              Solo agregar a Pendientes
+            </Button>
+          </div>
+        </Card>
+      )}
       <Card>
         <div className="toolbar">
           <div className="tabs">

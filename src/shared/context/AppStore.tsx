@@ -51,7 +51,7 @@ interface AppStoreValue {
   toast: { text: string; tone: "ok" | "warn" | "err" } | null;
   clearToast: () => void;
   // Sprint 1
-  simulateWhatsAppGroup: () => void;
+  simulateWhatsAppGroup: (custom?: { name?: string; phone?: string }) => void;
   confirmAndActivateStudent: (
     id: string,
     payload: {
@@ -131,14 +131,25 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
     };
   };
 
-  const simulateWhatsAppGroup = () => {
+  const simulateWhatsAppGroup = (custom?: { name?: string; phone?: string }) => {
     const idx = students.length + 1;
-    const names = ["Diego Salazar", "Camila Vargas", "Andrés Morales", "Valeria Torres"];
-    const name = names[(idx - 1) % names.length];
-    const phone = `+51 9${Math.floor(10000000 + Math.random() * 89999999)}`.replace(
-      /(\+51 \d{3})(\d{3})(\d{3})/,
-      "$1 $2 $3",
-    );
+    const names = [
+      "Diego Salazar",
+      "Camila Vargas",
+      "Andrés Morales",
+      "Valeria Torres",
+      "Sebastián Rojas",
+      "Paula Mendoza",
+      "Gabriel Castro",
+      "Fernanda Silva",
+    ];
+    const name = custom?.name?.trim() || names[(idx - 1) % names.length];
+    const phone =
+      custom?.phone?.trim() ||
+      `+51 9${Math.floor(10000000 + Math.random() * 89999999)}`.replace(
+        /(\+51 \d{3})(\d{3})(\d{3})/,
+        "$1 $2 $3",
+      );
     const ts = nowFormatted();
     const newStudent: Student = {
       id: `est-${Date.now()}`,

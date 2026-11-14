@@ -3,23 +3,20 @@ import { Button } from "../../shared/components/UI";
 import { useAppStore } from "../../shared/context/AppStore";
 import type { Page } from "../../shared/types/domain";
 
-export function SprintBar({ page, go }: { page: Page; go: (page: Page) => void }) {
+export function SprintBar({ page }: { page: Page; go?: (page: Page) => void }) {
   const {
-    role,
     students,
     selectedStudentId,
-    simulateWhatsAppGroup,
     simulateFileUpload,
     resetAll,
   } = useAppStore();
   const [visible, setVisible] = useState(true);
 
-  const isStudents = page === "students" || page === "validation" || page === "student";
   const isDocs = page === "documents" || page === "review";
   const isAlerts = page === "alerts";
 
-  // Solo mostrar acciones rápidas en Estudiantes (si no es Personal), Documentos o Alertas
-  const hasActions = (isStudents && role !== "Personal") || isDocs || isAlerts;
+  // Solo mostrar acciones rápidas en Documentos o Alertas (Estudiantes ya tiene su propio botón)
+  const hasActions = isDocs || isAlerts;
   if (!hasActions) return null;
 
   const inactiveStudent = students.find((s) => s.status === "Inactivo");
@@ -37,17 +34,6 @@ export function SprintBar({ page, go }: { page: Page; go: (page: Page) => void }
   return (
     <div className="sprint-bar">
       <span className="sprint-bar-label">Acciones rápidas:</span>
-
-      {isStudents && role !== "Personal" && (
-        <Button
-          onClick={() => {
-            simulateWhatsAppGroup();
-            go("validation");
-          }}
-        >
-          + Nuevo grupo WhatsApp
-        </Button>
-      )}
 
       {isDocs && (
         <>
