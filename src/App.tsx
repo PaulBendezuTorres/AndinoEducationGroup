@@ -12,6 +12,7 @@ import {
   icons,
 } from "./shared/components/UI";
 import { AppStoreProvider, useAppStore } from "./shared/context/AppStore";
+import { useAppRouter } from "./shared/router/useAppRouter";
 import type { DocCategory, Page, StudentStatus } from "./shared/types/domain";
 
 const navItems: { page: Page; label: string; icon: keyof typeof icons }[] = [
@@ -1022,9 +1023,9 @@ function Users() {
 
 function AppContent() {
   const { currentUser } = useAppStore();
-  const [page, setPage] = useState<Page>("home");
+  const { page, go } = useAppRouter(Boolean(currentUser));
 
-  if (!currentUser || page === "login") return <Login go={setPage} />;
+  if (!currentUser || page === "login") return <Login go={go} />;
 
   const titles: Record<Page, string> = {
     login: "Acceso",
@@ -1040,13 +1041,13 @@ function AppContent() {
   };
 
   return (
-    <Shell page={page} go={setPage} breadcrumb={titles[page]}>
-      {page === "home" && <Home go={setPage} />}
-      {page === "students" && <Students go={setPage} />}
-      {page === "validation" && <Validation go={setPage} />}
-      {page === "student" && <StudentDetail go={setPage} />}
-      {page === "documents" && <Documents go={setPage} />}
-      {page === "review" && <Review go={setPage} />}
+    <Shell page={page} go={go} breadcrumb={titles[page]}>
+      {page === "home" && <Home go={go} />}
+      {page === "students" && <Students go={go} />}
+      {page === "validation" && <Validation go={go} />}
+      {page === "student" && <StudentDetail go={go} />}
+      {page === "documents" && <Documents go={go} />}
+      {page === "review" && <Review go={go} />}
       {page === "alerts" && <Alerts />}
       {page === "integrations" && <Integrations />}
       {page === "users" && <Users />}
