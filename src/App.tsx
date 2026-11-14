@@ -238,6 +238,7 @@ function Login({ go }: { go: (p: Page) => void }) {
   const [mode, setMode] = useState<"login" | "recover">("login");
   const [email, setEmail] = useState("carolina@andino.edu");
   const [password, setPassword] = useState("andino2026");
+  const [showPassword, setShowPassword] = useState(false);
   const [feedback, setFeedback] = useState<{ text: string; ok: boolean } | null>(null);
 
   return (
@@ -250,97 +251,181 @@ function Login({ go }: { go: (p: Page) => void }) {
             Centraliza los expedientes de WhatsApp Business, clasifica documentos con IA y resguarda
             cada archivo en Google Drive con trazabilidad completa.
           </p>
+
+          <div className="feature-list">
+            <div className="feature">
+              <span>
+                <Icon name="message" size={18} />
+              </span>
+              <div>
+                <strong>Recepción desde WhatsApp Business</strong>
+                <small>Detección automática de grupos y archivos de estudiantes.</small>
+              </div>
+            </div>
+            <div className="feature">
+              <span>
+                <Icon name="sparkles" size={18} />
+              </span>
+              <div>
+                <strong>Clasificación inteligente con IA</strong>
+                <small>Organización documental con validación humana y trazabilidad.</small>
+              </div>
+            </div>
+            <div className="feature">
+              <span>
+                <Icon name="folderCheck" size={18} />
+              </span>
+              <div>
+                <strong>Resguardo en Google Drive</strong>
+                <small>Almacenamiento seguro con control de estados y alertas.</small>
+              </div>
+            </div>
+          </div>
         </div>
+        <p className="legal">Andino Education Group · Plataforma interna de gestión documental.</p>
       </section>
+
       <section className="login-access">
-        {mode === "login" ? (
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              const res = login(email, password);
-              if (res.ok) {
-                setFeedback(null);
-                go("home");
-              } else {
-                setFeedback({ text: res.error ?? "Error al iniciar sesión.", ok: false });
-              }
-            }}
-          >
-            <h2>Iniciar sesión</h2>
-            <p className="login-sub">Accede a la gestión documental de Andino.</p>
-            <label>
-              Correo electrónico
-              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-            </label>
-            <label>
-              Contraseña
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-            </label>
-            {feedback && (
-              <p className="sub" style={{ color: feedback.ok ? "#15803d" : "#b91c1c" }}>
-                {feedback.text}
-              </p>
-            )}
-            <Button primary type="submit">
-              Ingresar al panel
-            </Button>
-            <div className="head-action" style={{ marginTop: 12 }}>
-              <button
-                type="button"
-                className="back-link"
-                onClick={() => {
+        <div className="login-card">
+          {mode === "login" ? (
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                const res = login(email, password);
+                if (res.ok) {
                   setFeedback(null);
-                  setMode("recover");
-                }}
-              >
-                ¿Olvidaste tu contraseña?
-              </button>
-            </div>
-            <p className="sub" style={{ marginTop: 14 }}>
-              Acceso exclusivo para cuentas autorizadas por el Administrador.
-            </p>
-          </form>
-        ) : (
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              const res = recoverPassword(email);
-              setFeedback({ text: res.message, ok: res.ok });
-            }}
-          >
-            <h2>Recuperar contraseña</h2>
-            <p className="login-sub">Ingresa tu correo para restablecer tu acceso.</p>
-            <label>
-              Correo electrónico
-              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-            </label>
-            {feedback && (
-              <p className="sub" style={{ color: feedback.ok ? "#15803d" : "#b91c1c" }}>
-                {feedback.text}
-              </p>
-            )}
-            <Button primary type="submit">
-              Enviar instrucciones
-            </Button>
-            <div className="head-action" style={{ marginTop: 12 }}>
-              <button
-                type="button"
-                className="back-link"
-                onClick={() => {
-                  setFeedback(null);
-                  setMode("login");
-                }}
-              >
-                Volver a iniciar sesión
-              </button>
-            </div>
-          </form>
-        )}
+                  go("home");
+                } else {
+                  setFeedback({ text: res.error ?? "Error al iniciar sesión.", ok: false });
+                }
+              }}
+            >
+              <div>
+                <h2>Iniciar sesión</h2>
+                <p className="login-sub">Accede a la gestión documental de Andino.</p>
+              </div>
+
+              <label>
+                Correo electrónico
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    setFeedback(null);
+                  }}
+                  placeholder="nombre@andino.edu"
+                  required
+                />
+              </label>
+
+              <label>
+                Contraseña
+                <div className="password-wrap">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      setFeedback(null);
+                    }}
+                    placeholder="Ingresa tu contraseña"
+                    required
+                  />
+                  <button
+                    type="button"
+                    className="password-toggle"
+                    onClick={() => setShowPassword((v) => !v)}
+                  >
+                    {showPassword ? "Ocultar" : "Mostrar"}
+                  </button>
+                </div>
+              </label>
+
+              <div className="login-options">
+                <span className="sub">Sesión corporativa</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFeedback(null);
+                    setMode("recover");
+                  }}
+                >
+                  ¿Olvidaste tu contraseña?
+                </button>
+              </div>
+
+              {feedback && (
+                <div className={`login-feedback ${feedback.ok ? "ok" : "err"}`}>
+                  {feedback.text}
+                </div>
+              )}
+
+              <Button primary type="submit">
+                Ingresar al panel
+              </Button>
+
+              <div className="security">
+                <Icon name="lock" size={14} />
+                <span>Acceso exclusivo para cuentas autorizadas por el Administrador.</span>
+              </div>
+            </form>
+          ) : (
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                const res = recoverPassword(email);
+                setFeedback({ text: res.message, ok: res.ok });
+              }}
+            >
+              <div>
+                <h2>Recuperar contraseña</h2>
+                <p className="login-sub">Ingresa tu correo corporativo para restablecer tu acceso.</p>
+              </div>
+
+              <label>
+                Correo electrónico
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    setFeedback(null);
+                  }}
+                  placeholder="nombre@andino.edu"
+                  required
+                />
+              </label>
+
+              {feedback && (
+                <div className={`login-feedback ${feedback.ok ? "ok" : "err"}`}>
+                  {feedback.text}
+                </div>
+              )}
+
+              <Button primary type="submit">
+                Enviar instrucciones
+              </Button>
+
+              <div className="login-options">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFeedback(null);
+                    setMode("login");
+                  }}
+                >
+                  ← Volver a iniciar sesión
+                </button>
+              </div>
+
+              <div className="security">
+                <Icon name="lock" size={14} />
+                <span>Acceso exclusivo para cuentas autorizadas por el Administrador.</span>
+              </div>
+            </form>
+          )}
+        </div>
       </section>
     </div>
   );
