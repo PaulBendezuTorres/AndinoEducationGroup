@@ -41,8 +41,9 @@ function Sidebar({ page, go }: { page: Page; go: (page: Page) => void }) {
         : page;
 
   const visibleNav = navItems.filter((item) => {
-    if (role === "Personal" && (item.page === "integrations" || item.page === "users")) return false;
-    if (role === "Encargado" && item.page === "users") return false;
+    if (role !== "Administrador" && (item.page === "integrations" || item.page === "users")) {
+      return false;
+    }
     return true;
   });
 
@@ -1022,10 +1023,13 @@ function Users() {
 }
 
 function AppContent() {
-  const { currentUser } = useAppStore();
+  const { currentUser, role } = useAppStore();
   const { page, go } = useAppRouter(Boolean(currentUser));
 
   if (!currentUser || page === "login") return <Login go={go} />;
+
+  const activePage: Page =
+    role !== "Administrador" && (page === "integrations" || page === "users") ? "home" : page;
 
   const titles: Record<Page, string> = {
     login: "Acceso",
@@ -1041,16 +1045,16 @@ function AppContent() {
   };
 
   return (
-    <Shell page={page} go={go} breadcrumb={titles[page]}>
-      {page === "home" && <Home go={go} />}
-      {page === "students" && <Students go={go} />}
-      {page === "validation" && <Validation go={go} />}
-      {page === "student" && <StudentDetail go={go} />}
-      {page === "documents" && <Documents go={go} />}
-      {page === "review" && <Review go={go} />}
-      {page === "alerts" && <Alerts />}
-      {page === "integrations" && <Integrations />}
-      {page === "users" && <Users />}
+    <Shell page={activePage} go={go} breadcrumb={titles[activePage]}>
+      {activePage === "home" && <Home go={go} />}
+      {activePage === "students" && <Students go={go} />}
+      {activePage === "validation" && <Validation go={go} />}
+      {activePage === "student" && <StudentDetail go={go} />}
+      {activePage === "documents" && <Documents go={go} />}
+      {activePage === "review" && <Review go={go} />}
+      {activePage === "alerts" && <Alerts />}
+      {activePage === "integrations" && <Integrations />}
+      {activePage === "users" && <Users />}
     </Shell>
   );
 }
