@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button } from "../../shared/components/UI";
+import { Button, ConfirmDialog } from "../../shared/components/UI";
 import { useAppStore } from "../../shared/context/AppStore";
 import type { Page } from "../../shared/types/domain";
 
@@ -13,6 +13,7 @@ export function SprintBar({ page, go }: { page: Page; go: (page: Page) => void }
     resetAll,
   } = useAppStore();
   const [visible, setVisible] = useState(false);
+  const [confirmReset, setConfirmReset] = useState(false);
 
   const isStudents = page === "students" || page === "validation" || page === "student";
   const isDocs = page === "documents" || page === "review";
@@ -94,8 +95,21 @@ export function SprintBar({ page, go }: { page: Page; go: (page: Page) => void }
         </Button>
       )}
 
-      <Button onClick={resetAll}>Reiniciar</Button>
+      <Button onClick={() => setConfirmReset(true)}>Reiniciar</Button>
       <Button onClick={() => setVisible(false)}>Ocultar</Button>
+
+      <ConfirmDialog
+        open={confirmReset}
+        danger
+        title="¿Reiniciar datos al estado inicial?"
+        description="Se restaurarán todos los estudiantes, documentos, historial y alertas a su estado original."
+        confirmLabel="Sí, reiniciar"
+        onCancel={() => setConfirmReset(false)}
+        onConfirm={() => {
+          resetAll();
+          setConfirmReset(false);
+        }}
+      />
     </div>
   );
 }

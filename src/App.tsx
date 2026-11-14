@@ -5,6 +5,7 @@ import {
   Brand,
   Button,
   Card,
+  ConfirmDialog,
   Field,
   Icon,
   InfoBanner,
@@ -748,6 +749,7 @@ function StudentDetail({ go }: { go: (p: Page) => void }) {
     simulateFileUpload,
     setSelectedDocId,
   } = useAppStore();
+  const [pendingAction, setPendingAction] = useState<"deactivate" | "reactivate" | null>(null);
   const student = students.find((s) => s.id === selectedStudentId) ?? students[0];
   if (!student) return null;
 
@@ -768,17 +770,39 @@ function StudentDetail({ go }: { go: (p: Page) => void }) {
               + Recibir archivo
             </Button>
             {role !== "Personal" && student.status === "Activo" && (
-              <Button danger onClick={() => deactivateStudent(student.id)}>
+              <Button danger onClick={() => setPendingAction("deactivate")}>
                 Pasar a Inactivo
               </Button>
             )}
             {role !== "Personal" && student.status === "Inactivo" && (
-              <Button primary onClick={() => reactivateStudent(student.id)}>
+              <Button primary onClick={() => setPendingAction("reactivate")}>
                 Reactivar estudiante
               </Button>
             )}
           </div>
         }
+      />
+
+      <ConfirmDialog
+        open={pendingAction !== null}
+        danger={pendingAction === "deactivate"}
+        title={
+          pendingAction === "deactivate"
+            ? `¿Pasar a ${student.name} a Inactivo?`
+            : `¿Reactivar a ${student.name}?`
+        }
+        description={
+          pendingAction === "deactivate"
+            ? "Los nuevos documentos recibidos quedarán retenidos en revisión y generarán una alerta prioritaria hasta ser autorizados."
+            : "El estudiante volverá a estado Activo y sus próximos documentos se clasificarán y guardarán automáticamente en Google Drive."
+        }
+        confirmLabel={pendingAction === "deactivate" ? "Sí, pasar a Inactivo" : "Sí, reactivar"}
+        onCancel={() => setPendingAction(null)}
+        onConfirm={() => {
+          if (pendingAction === "deactivate") deactivateStudent(student.id);
+          if (pendingAction === "reactivate") reactivateStudent(student.id);
+          setPendingAction(null);
+        }}
       />
 
       <div className="metrics-grid">
@@ -1125,6 +1149,7 @@ function Alerts({ go }: { go: (p: Page) => void }) {
   const { role, alerts, resolveInactiveAlert, setSelectedStudentId, setSelectedDocId } =
     useAppStore();
   const [tab, setTab] = useState<"Abierta" | "Resuelta" | "Todas">("Abierta");
+  const [confirmAlertId, setConfirmAlertId] = useState<string | null>(null);
 
   const openCount = alerts.filter((a) => a.status === "Abierta").length;
   const highCount = alerts.filter((a) => a.status === "Abierta" && a.priority === "Alta").length;
@@ -1221,7 +1246,7 @@ function Alerts({ go }: { go: (p: Page) => void }) {
                       >
                         Revisar archivo
                       </Button>
-                      <Button primary onClick={() => resolveInactiveAlert(a.id, true, false)}>
+                      <Button primary onClick={() => setConfirmAlertId(a.id)}>
                         Autorizar documento
                       </Button>
                     </div>
@@ -1262,6 +1287,18 @@ function Alerts({ go }: { go: (p: Page) => void }) {
           })
         )}
       </div>
+
+      <ConfirmDialog
+        open={confirmAlertId !== null}
+        title="¿Autorizar guardado en Google Drive?"
+        description="El archivo retenido se almacenará en la carpeta del estudiante y la alerta pasará a Resuelta. El estudiante seguirá en estado Inactivo."
+        confirmLabel="Sí, autorizar"
+        onCancel={() => setConfirmAlertId(null)}
+        onConfirm={() => {
+          if (confirmAlertId) resolveInactiveAlert(confirmAlertId, true, false);
+          setConfirmAlertId(null);
+        }}
+      />
     </>
   );
 }
@@ -1270,6 +1307,8 @@ function Integrations() {
   const [waActive, setWaActive] = useState(true);
   const [driveVerified, setDriveVerified] = useState(true);
   const [aiThreshold, setAiThreshold] = useState("80");
+  const [confirmPauseWa, setConfirmPauseWa] = useState(false);
+  const [pendingThreshold, setPendingThreshold] = useState<string | null>(null);
 
   return (
     <>
@@ -1296,7 +1335,12 @@ function Integrations() {
               <strong>Activo (&lt; 5 s)</strong>
             </div>
             <div className="head-action">
-              <Button onClick={() => setWaActive((v) => !v)}>
+              <Button
+                onClick={() => {
+                  if (waActive) setConfirmPauseWa(true);
+                  else setWaActive(true);
+                }}
+              >
                 {waActive ? "Pausar escucha" : "Reanudar escucha"}
               </Button>
             </div>
@@ -1342,7 +1386,7 @@ function Integrations() {
               <select
                 className="select-input"
                 value={aiThreshold}
-                onChange={(e) => setAiThreshold(e.target.value)}
+                onChange={(e) => setPendingThreshold(e.target.value)}
               >
                 <option value="75">75% o superior</option>
                 <option value="80">80% o superior (Recomendado)</option>
@@ -1388,12 +1432,40 @@ function Integrations() {
           </div>
         </div>
       </Card>
+
+      <ConfirmDialog
+        open={confirmPauseWa}
+        danger
+        title="¿Pausar escucha de WhatsApp Business?"
+        description="Mientras la integración esté pausada, no se recibirán ni clasificarán automáticamente nuevos archivos de grupos."
+        confirmLabel="Sí, pausar escucha"
+        onCancel={() => setConfirmPauseWa(false)}
+        onConfirm={() => {
+          setWaActive(false);
+          setConfirmPauseWa(false);
+        }}
+      />
+
+      <ConfirmDialog
+        open={pendingThreshold !== null}
+        title="¿Cambiar umbral de confianza IA?"
+        description={`Se actualizará el umbral automático de Gemini a ${pendingThreshold ?? aiThreshold}% para las próximas clasificaciones.`}
+        confirmLabel="Sí, actualizar umbral"
+        onCancel={() => setPendingThreshold(null)}
+        onConfirm={() => {
+          if (pendingThreshold) setAiThreshold(pendingThreshold);
+          setPendingThreshold(null);
+        }}
+      />
     </>
   );
 }
 
 function Users() {
   const { users, toggleUserActive } = useAppStore();
+  const [pendingUserId, setPendingUserId] = useState<string | null>(null);
+  const pendingUser = users.find((u) => u.id === pendingUserId);
+
   return (
     <>
       <PageHead title="Usuarios y roles" subtitle="Control de acceso del equipo de Andino." />
@@ -1423,7 +1495,7 @@ function Users() {
                     </Badge>
                   </td>
                   <td>
-                    <Button onClick={() => toggleUserActive(u.id)}>
+                    <Button danger={u.active} onClick={() => setPendingUserId(u.id)}>
                       {u.active ? "Suspender" : "Activar"}
                     </Button>
                   </td>
@@ -1433,6 +1505,27 @@ function Users() {
           </table>
         </div>
       </Card>
+
+      <ConfirmDialog
+        open={Boolean(pendingUser)}
+        danger={Boolean(pendingUser?.active)}
+        title={
+          pendingUser?.active
+            ? `¿Suspender acceso de ${pendingUser.name}?`
+            : `¿Reactivar acceso de ${pendingUser?.name ?? ""}?`
+        }
+        description={
+          pendingUser?.active
+            ? `El usuario (${pendingUser.role}) perderá acceso al sistema hasta que un Administrador vuelva a activarlo.`
+            : `El usuario volverá a tener acceso al sistema con el rol ${pendingUser?.role ?? ""}.`
+        }
+        confirmLabel={pendingUser?.active ? "Sí, suspender" : "Sí, activar"}
+        onCancel={() => setPendingUserId(null)}
+        onConfirm={() => {
+          if (pendingUser) toggleUserActive(pendingUser.id);
+          setPendingUserId(null);
+        }}
+      />
     </>
   );
 }

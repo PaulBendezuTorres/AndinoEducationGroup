@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 
 const A = `${import.meta.env.BASE_URL}assets`;
 
@@ -150,5 +150,64 @@ export function Field({
         disabled={disabled}
       />
     </label>
+  );
+}
+
+export function ConfirmDialog({
+  open,
+  title,
+  description,
+  confirmLabel = "Confirmar",
+  cancelLabel = "Cancelar",
+  danger = false,
+  onConfirm,
+  onCancel,
+}: {
+  open: boolean;
+  title: string;
+  description: string;
+  confirmLabel?: string;
+  cancelLabel?: string;
+  danger?: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onCancel();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onCancel]);
+
+  if (!open) return null;
+
+  return (
+    <div
+      className="modal-backdrop"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="confirm-dialog-title"
+      onClick={onCancel}
+    >
+      <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-head">
+          <div className={`modal-icon ${danger ? "danger" : ""}`}>
+            <Icon name={danger ? "warning" : "info"} size={18} />
+          </div>
+          <div>
+            <h3 id="confirm-dialog-title">{title}</h3>
+            <p className="sub">{description}</p>
+          </div>
+        </div>
+        <div className="modal-actions">
+          <Button onClick={onCancel}>{cancelLabel}</Button>
+          <Button primary={!danger} danger={danger} onClick={onConfirm}>
+            {confirmLabel}
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 }
