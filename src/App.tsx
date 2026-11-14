@@ -14,7 +14,7 @@ import {
 } from "./shared/components/UI";
 import { AppStoreProvider, useAppStore } from "./shared/context/AppStore";
 import { useAppRouter } from "./shared/router/useAppRouter";
-import type { DocCategory, Page, StudentStatus } from "./shared/types/domain";
+import type { DocCategory, Page, Role, StudentStatus } from "./shared/types/domain";
 
 const navItems: { page: Page; label: string; icon: keyof typeof icons }[] = [
   { page: "home", label: "Inicio", icon: "home" },
@@ -301,6 +301,9 @@ function Login({ go }: { go: (p: Page) => void }) {
                 ¿Olvidaste tu contraseña?
               </button>
             </div>
+            <p className="sub" style={{ marginTop: 14 }}>
+              Acceso exclusivo para cuentas autorizadas por el Administrador.
+            </p>
           </form>
         ) : (
           <form
@@ -1462,13 +1465,34 @@ function Integrations() {
 }
 
 function Users() {
-  const { users, toggleUserActive } = useAppStore();
+  const { users, createUser, toggleUserActive } = useAppStore();
   const [pendingUserId, setPendingUserId] = useState<string | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newEmail, setNewEmail] = useState("");
+  const [newRole, setNewRole] = useState<Role>("Personal");
+  const [formError, setFormError] = useState<string | null>(null);
   const pendingUser = users.find((u) => u.id === pendingUserId);
+
+  const openCreateModal = () => {
+    setNewName("");
+    setNewEmail("");
+    setNewRole("Personal");
+    setFormError(null);
+    setCreateOpen(true);
+  };
 
   return (
     <>
-      <PageHead title="Usuarios y roles" subtitle="Control de acceso del equipo de Andino." />
+      <PageHead
+        title="Usuarios y roles"
+        subtitle="Control de acceso del equipo de Andino. Solo el Administrador puede crear cuentas."
+        action={
+          <Button primary onClick={openCreateModal}>
+            + Agregar cuenta
+          </Button>
+        }
+      />
       <Card>
         <div className="table-wrap">
           <table className="table">
@@ -1505,6 +1529,87 @@ function Users() {
           </table>
         </div>
       </Card>
+
+      {createOpen && (
+        <div
+          className="modal-backdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="create-user-title"
+          onClick={() => setCreateOpen(false)}
+        >
+          <form
+            className="modal-card"
+            onClick={(e) => e.stopPropagation()}
+            onSubmit={(e) => {
+              e.preventDefault();
+              const res = createUser({ name: newName, email: newEmail, role: newRole });
+              if (res.ok) {
+                setCreateOpen(false);
+              } else {
+                setFormError(res.error ?? "No se pudo crear la cuenta.");
+              }
+            }}
+          >
+            <div className="modal-head">
+              <div className="modal-icon">
+                <Icon name="userPlus" size={18} />
+              </div>
+              <div>
+                <h3 id="create-user-title">Nueva cuenta de equipo</h3>
+                <p className="sub">
+                  La cuenta quedará activa y habilitada para iniciar sesión con su correo.
+                </p>
+              </div>
+            </div>
+
+            <div className="stack">
+              <Field
+                label="Nombre completo"
+                value={newName}
+                onChange={(v) => {
+                  setNewName(v);
+                  setFormError(null);
+                }}
+                placeholder="Ej. Sofía Paredes"
+              />
+              <Field
+                label="Correo corporativo"
+                value={newEmail}
+                onChange={(v) => {
+                  setNewEmail(v);
+                  setFormError(null);
+                }}
+                placeholder="sofia@andino.edu"
+              />
+              <label className="field">
+                <span>Rol asignado</span>
+                <select
+                  className="select-input"
+                  value={newRole}
+                  onChange={(e) => setNewRole(e.target.value as Role)}
+                >
+                  <option value="Personal">Personal</option>
+                  <option value="Encargado">Encargado</option>
+                  <option value="Administrador">Administrador</option>
+                </select>
+              </label>
+              {formError && (
+                <p className="sub" style={{ color: "#b91c1c" }}>
+                  {formError}
+                </p>
+              )}
+            </div>
+
+            <div className="modal-actions">
+              <Button onClick={() => setCreateOpen(false)}>Cancelar</Button>
+              <Button primary type="submit">
+                Crear cuenta
+              </Button>
+            </div>
+          </form>
+        </div>
+      )}
 
       <ConfirmDialog
         open={Boolean(pendingUser)}

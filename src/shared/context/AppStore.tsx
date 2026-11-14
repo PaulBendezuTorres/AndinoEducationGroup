@@ -76,6 +76,10 @@ interface AppStoreValue {
   reactivateStudent: (id: string) => void;
   resolveInactiveAlert: (alertId: string, authorizeDoc: boolean, reactivateStudent: boolean) => void;
   // Sprint 5
+  createUser: (payload: { name: string; email: string; role: Role }) => {
+    ok: boolean;
+    error?: string;
+  };
   toggleUserActive: (userId: string) => void;
   resetAll: () => void;
 }
@@ -699,6 +703,30 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
     notify("Alerta resuelta correctamente.", "ok");
   };
 
+  const createUser: AppStoreValue["createUser"] = (payload) => {
+    if (role !== "Administrador") {
+      return { ok: false, error: "Solo el Administrador puede crear cuentas." };
+    }
+    const cleanName = payload.name.trim();
+    const cleanEmail = payload.email.trim().toLowerCase();
+    if (!cleanName || !cleanEmail.includes("@")) {
+      return { ok: false, error: "Ingresa un nombre y un correo electrónico válido." };
+    }
+    if (users.some((u) => u.email.toLowerCase() === cleanEmail)) {
+      return { ok: false, error: "Ya existe una cuenta registrada con ese correo." };
+    }
+    const newUser: AppUser = {
+      id: `usr-${Date.now()}`,
+      name: cleanName,
+      email: cleanEmail,
+      role: payload.role,
+      active: true,
+    };
+    setUsers((prev) => [...prev, newUser]);
+    notify(`Cuenta creada para ${cleanName} (${payload.role}).`, "ok");
+    return { ok: true };
+  };
+
   const toggleUserActive = (userId: string) => {
     if (role !== "Administrador") {
       notify("Solo el Administrador puede gestionar usuarios.", "err");
@@ -746,6 +774,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
         deactivateStudent,
         reactivateStudent,
         resolveInactiveAlert,
+        createUser,
         toggleUserActive,
         resetAll,
       }}
