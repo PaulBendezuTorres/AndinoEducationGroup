@@ -493,7 +493,7 @@ function Students({ go }: { go: (p: Page) => void }) {
         action={
           role !== "Personal" ? (
             <Button primary onClick={() => setShowNewForm((v) => !v)}>
-              {showNewForm ? "Cancelar" : "+ Nuevo grupo WhatsApp"}
+              {showNewForm ? "Cancelar" : "+ Registrar estudiante"}
             </Button>
           ) : undefined
         }
@@ -501,7 +501,7 @@ function Students({ go }: { go: (p: Page) => void }) {
       {showNewForm && role !== "Personal" && (
         <Card className="mb-4">
           <div className="card-head">
-            <h3>Registrar nuevo grupo de WhatsApp</h3>
+            <h3>Registrar nuevo estudiante</h3>
           </div>
           <div className="two-col">
             <Field

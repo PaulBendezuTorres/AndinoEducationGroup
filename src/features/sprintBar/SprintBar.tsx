@@ -3,20 +3,22 @@ import { Button } from "../../shared/components/UI";
 import { useAppStore } from "../../shared/context/AppStore";
 import type { Page } from "../../shared/types/domain";
 
-export function SprintBar({ page }: { page: Page; go?: (page: Page) => void }) {
+export function SprintBar({ page, go }: { page: Page; go: (page: Page) => void }) {
   const {
+    role,
     students,
     selectedStudentId,
+    simulateWhatsAppGroup,
     simulateFileUpload,
     resetAll,
   } = useAppStore();
   const [visible, setVisible] = useState(true);
 
+  const isStudents = page === "students" || page === "validation" || page === "student";
   const isDocs = page === "documents" || page === "review";
   const isAlerts = page === "alerts";
 
-  // Solo mostrar acciones rápidas en Documentos o Alertas (Estudiantes ya tiene su propio botón)
-  const hasActions = isDocs || isAlerts;
+  const hasActions = (isStudents && role !== "Personal") || isDocs || isAlerts;
   if (!hasActions) return null;
 
   const inactiveStudent = students.find((s) => s.status === "Inactivo");
@@ -25,15 +27,26 @@ export function SprintBar({ page }: { page: Page; go?: (page: Page) => void }) {
   if (!visible) {
     return (
       <div className="sprint-bar">
-        <span className="sprint-bar-label">Acciones rápidas ocultas</span>
-        <Button onClick={() => setVisible(true)}>Mostrar acciones</Button>
+        <span className="sprint-bar-label">Eventos externos ocultos</span>
+        <Button onClick={() => setVisible(true)}>Mostrar eventos</Button>
       </div>
     );
   }
 
   return (
     <div className="sprint-bar">
-      <span className="sprint-bar-label">Acciones rápidas:</span>
+      <span className="sprint-bar-label">Eventos WhatsApp:</span>
+
+      {isStudents && role !== "Personal" && (
+        <Button
+          onClick={() => {
+            simulateWhatsAppGroup();
+            go("validation");
+          }}
+        >
+          + Grupo WhatsApp detectado
+        </Button>
+      )}
 
       {isDocs && (
         <>
