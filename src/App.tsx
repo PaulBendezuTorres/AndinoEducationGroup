@@ -575,15 +575,25 @@ function Students({ go }: { go: (p: Page) => void }) {
 function Validation({ go }: { go: (p: Page) => void }) {
   const { students, selectedStudentId, confirmAndActivateStudent } = useAppStore();
   const student = students.find((s) => s.id === selectedStudentId) ?? students[0];
-
-  const [name, setName] = useState(student?.name ?? "");
-  const [email, setEmail] = useState(student?.email ?? "");
-  const [phone, setPhone] = useState(student?.phone ?? "");
-  const [destination, setDestination] = useState(student?.destination ?? "");
-  const [driveFolder, setDriveFolder] = useState(student?.driveFolder ?? "");
-  const [participants, setParticipants] = useState(student?.participants ?? []);
-
   if (!student) return null;
+  return <ValidationForm key={student.id} student={student} go={go} confirm={confirmAndActivateStudent} />;
+}
+
+function ValidationForm({
+  student,
+  go,
+  confirm,
+}: {
+  student: ReturnType<typeof useAppStore>["students"][number];
+  go: (p: Page) => void;
+  confirm: ReturnType<typeof useAppStore>["confirmAndActivateStudent"];
+}) {
+  const [name, setName] = useState(student.name);
+  const [email, setEmail] = useState(student.email);
+  const [phone, setPhone] = useState(student.phone);
+  const [destination, setDestination] = useState(student.destination);
+  const [driveFolder, setDriveFolder] = useState(student.driveFolder);
+  const [participants, setParticipants] = useState(student.participants);
 
   return (
     <>
@@ -626,7 +636,7 @@ function Validation({ go }: { go: (p: Page) => void }) {
             <Button
               primary
               onClick={() => {
-                const res = confirmAndActivateStudent(student.id, {
+                const res = confirm(student.id, {
                   name,
                   email,
                   phone,
@@ -866,9 +876,20 @@ function Documents({ go }: { go: (p: Page) => void }) {
 function Review({ go }: { go: (p: Page) => void }) {
   const { documents, selectedDocId, correctDocumentCategory } = useAppStore();
   const doc = documents.find((d) => d.id === selectedDocId) ?? documents[0];
-  const [category, setCategory] = useState<DocCategory>(doc?.category ?? "Pasaporte");
-
   if (!doc) return null;
+  return <ReviewForm key={doc.id} doc={doc} go={go} onSave={correctDocumentCategory} />;
+}
+
+function ReviewForm({
+  doc,
+  go,
+  onSave,
+}: {
+  doc: ReturnType<typeof useAppStore>["documents"][number];
+  go: (p: Page) => void;
+  onSave: ReturnType<typeof useAppStore>["correctDocumentCategory"];
+}) {
+  const [category, setCategory] = useState<DocCategory>(doc.category);
 
   return (
     <>
@@ -907,7 +928,7 @@ function Review({ go }: { go: (p: Page) => void }) {
             <Button
               primary
               onClick={() => {
-                correctDocumentCategory(doc.id, category);
+                onSave(doc.id, category);
                 go("documents");
               }}
             >
