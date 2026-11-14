@@ -473,6 +473,7 @@ function Students({ go }: { go: (p: Page) => void }) {
   const [showNewForm, setShowNewForm] = useState(false);
   const [newName, setNewName] = useState("");
   const [newPhone, setNewPhone] = useState("");
+  const [newGroup, setNewGroup] = useState("");
 
   const filtered = students.filter((s) => {
     const matchesStatus = filter === "Todos" || s.status === filter;
@@ -516,14 +517,21 @@ function Students({ go }: { go: (p: Page) => void }) {
               onChange={setNewPhone}
               placeholder="Ej. +51 988 123 456 (opcional)"
             />
+            <Field
+              label="Grupo de WhatsApp (origen)"
+              value={newGroup}
+              onChange={setNewGroup}
+              placeholder="Ej. Andino | Rodrigo Chávez"
+            />
           </div>
           <div className="head-action" style={{ marginTop: 12 }}>
             <Button
               primary
               onClick={() => {
-                simulateWhatsAppGroup({ name: newName, phone: newPhone });
+                simulateWhatsAppGroup({ name: newName, phone: newPhone, whatsappGroup: newGroup });
                 setNewName("");
                 setNewPhone("");
+                setNewGroup("");
                 setShowNewForm(false);
                 go("validation");
               }}
@@ -532,9 +540,10 @@ function Students({ go }: { go: (p: Page) => void }) {
             </Button>
             <Button
               onClick={() => {
-                simulateWhatsAppGroup({ name: newName, phone: newPhone });
+                simulateWhatsAppGroup({ name: newName, phone: newPhone, whatsappGroup: newGroup });
                 setNewName("");
                 setNewPhone("");
+                setNewGroup("");
                 setShowNewForm(false);
               }}
             >
@@ -770,6 +779,7 @@ function StudentDetail({ go }: { go: (p: Page) => void }) {
             <h3>Expediente y documentos ({studentDocs.length})</h3>
             <Badge tone={statusTone(student.status)}>{student.status}</Badge>
           </div>
+          <p className="sub">Grupo WhatsApp: {student.whatsappGroup}</p>
           <p className="sub">Carpeta Drive: {student.driveFolder || "Sin vincular"}</p>
           <div className="stack">
             {studentDocs.map((d) => (

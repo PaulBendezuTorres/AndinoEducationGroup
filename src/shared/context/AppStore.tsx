@@ -51,7 +51,7 @@ interface AppStoreValue {
   toast: { text: string; tone: "ok" | "warn" | "err" } | null;
   clearToast: () => void;
   // Sprint 1
-  simulateWhatsAppGroup: (custom?: { name?: string; phone?: string }) => void;
+  simulateWhatsAppGroup: (custom?: { name?: string; phone?: string; whatsappGroup?: string }) => void;
   confirmAndActivateStudent: (
     id: string,
     payload: {
@@ -131,7 +131,11 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
     };
   };
 
-  const simulateWhatsAppGroup = (custom?: { name?: string; phone?: string }) => {
+  const simulateWhatsAppGroup = (custom?: {
+    name?: string;
+    phone?: string;
+    whatsappGroup?: string;
+  }) => {
     const idx = students.length + 1;
     const names = [
       "Diego Salazar",
@@ -150,6 +154,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
         /(\+51 \d{3})(\d{3})(\d{3})/,
         "$1 $2 $3",
       );
+    const whatsappGroup = custom?.whatsappGroup?.trim() || `Andino | ${name}`;
     const ts = nowFormatted();
     const newStudent: Student = {
       id: `est-${Date.now()}`,
@@ -157,7 +162,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       email: "",
       phone,
       destination: "Australia — Por definir",
-      whatsappGroup: `Andino | ${name}`,
+      whatsappGroup,
       driveFolder: "",
       status: "Pendiente",
       createdAt: ts,
