@@ -27,15 +27,15 @@ export function SprintBar({ page, go }: { page: Page; go: (page: Page) => void }
   if (!visible) {
     return (
       <div className="sprint-bar">
-        <span className="sprint-bar-label">Eventos externos ocultos</span>
-        <Button onClick={() => setVisible(true)}>Mostrar eventos</Button>
+        <span className="sprint-bar-label">Acciones rápidas ocultas</span>
+        <Button onClick={() => setVisible(true)}>Mostrar acciones</Button>
       </div>
     );
   }
 
   return (
     <div className="sprint-bar">
-      <span className="sprint-bar-label">Eventos WhatsApp:</span>
+      <span className="sprint-bar-label">Acciones rápidas:</span>
 
       {isStudents && role !== "Personal" && (
         <Button

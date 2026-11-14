@@ -53,3 +53,11 @@ Respetar estrictamente la paleta de colores definida en `src/index.css`:
 - **Figura y Fondo**: Mantener contraste claro entre el fondo base (`#f4f7fb`) y las superficies activas (`#ffffff`).
 - **Continuidad**: Alineación estricta en columnas, tablas y formularios para guiar la lectura sin saltos visuales.
 - **Destino Común**: Controles que operan sobre el mismo bloque (filtros, buscador y tabla) deben agruparse dentro de la misma región.
+
+## 9. Barra de Acciones Rápidas (Regla inamovible)
+- La barra superior de simulación se llama siempre **Acciones rápidas** (con opciones de `Reiniciar` y `Ocultar` / `Mostrar acciones`).
+- **Aislamiento estricto por vista**: cada ruta muestra únicamente sus propias acciones y **nunca** comparte botones de otras vistas:
+  - `/estudiantes...`: solo `+ Grupo WhatsApp detectado` (oculto para `Personal`).
+  - `/documentos...`: solo `+ Archivo de Estudiante` y `+ Archivo de Personal`.
+  - `/alertas`: solo `+ Archivo de Inactivo`.
+  - `/inicio`, `/integraciones`, `/usuarios`: no se muestra la barra.
