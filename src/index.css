@@ -1750,3 +1750,32 @@ dd {
   font-weight: 600;
   color: #26364b;
 }
+
+/* Espaciado de tarjetas de alertas, badges y altura completa del sidebar */
+.sidebar {
+  height: 100vh;
+}
+.reactivation {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+}
+.reactivation > div:first-child {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.reactivation h3 {
+  margin: 2px 0 0;
+}
+.reactivation p.sub {
+  margin: 0;
+  line-height: 1.45;
+}
+.badge {
+  padding: 3px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.3;
+}
