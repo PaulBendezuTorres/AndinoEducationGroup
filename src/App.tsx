@@ -238,7 +238,7 @@ function Login({ go }: { go: (p: Page) => void }) {
   const [feedback, setFeedback] = useState<{ text: string; ok: boolean } | null>(null);
 
   return (
-    <div className="login-page">
+    <div className="login">
       <section className="login-story">
         <Brand large />
         <div className="login-copy">
