@@ -744,6 +744,7 @@ function StudentDetail({ go }: { go: (p: Page) => void }) {
     documents,
     selectedStudentId,
     deactivateStudent,
+    reactivateStudent,
     simulateFileUpload,
     setSelectedDocId,
   } = useAppStore();
@@ -751,6 +752,8 @@ function StudentDetail({ go }: { go: (p: Page) => void }) {
   if (!student) return null;
 
   const studentDocs = documents.filter((d) => d.studentId === student.id);
+  const storedCount = studentDocs.filter((d) => d.status === "Almacenado").length;
+  const pendingCount = studentDocs.filter((d) => d.status === "Pendiente de revisión").length;
 
   return (
     <>
@@ -769,60 +772,122 @@ function StudentDetail({ go }: { go: (p: Page) => void }) {
                 Pasar a Inactivo
               </Button>
             )}
+            {role !== "Personal" && student.status === "Inactivo" && (
+              <Button primary onClick={() => reactivateStudent(student.id)}>
+                Reactivar estudiante
+              </Button>
+            )}
           </div>
         }
       />
 
-      <div className="two-col">
-        <Card>
-          <div className="card-head">
-            <h3>Expediente y documentos ({studentDocs.length})</h3>
+      <div className="metrics-grid">
+        <Card className="metric">
+          <small>Estado del expediente</small>
+          <div>
             <Badge tone={statusTone(student.status)}>{student.status}</Badge>
           </div>
-          <p className="sub">Grupo WhatsApp: {student.whatsappGroup}</p>
-          <p className="sub">Carpeta Drive: {student.driveFolder || "Sin vincular"}</p>
-          <div className="stack">
-            {studentDocs.map((d) => (
-              <div key={d.id} className="row-item">
-                <div>
-                  <strong>{d.fileName}</strong>
-                  <div className="sub">
-                    {d.category} · {d.receivedAt}
-                  </div>
-                </div>
-                <div className="head-action">
-                  <Badge
-                    tone={
-                      d.status === "Almacenado"
-                        ? "green"
-                        : d.status === "Pendiente de revisión"
-                          ? "amber"
-                          : "gray"
-                    }
-                  >
-                    {d.status}
-                  </Badge>
-                  {d.status === "Pendiente de revisión" && (
-                    <Button
-                      onClick={() => {
-                        setSelectedDocId(d.id);
-                        go("review");
-                      }}
-                    >
-                      Revisar
-                    </Button>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
+          <span>Alta: {student.createdAt}</span>
         </Card>
+        <Card className="metric">
+          <small>Documentos recibidos</small>
+          <strong>{studentDocs.length}</strong>
+          <span>
+            {storedCount} en Drive · {pendingCount} por revisar
+          </span>
+        </Card>
+        <Card className="metric">
+          <small>Grupo WhatsApp</small>
+          <strong style={{ fontSize: 15 }}>{student.whatsappGroup}</strong>
+          <span>{student.participants.length} participantes</span>
+        </Card>
+        <Card className="metric">
+          <small>Carpeta Google Drive</small>
+          <strong style={{ fontSize: 14 }}>{student.driveFolder || "Sin vincular"}</strong>
+          <span>{student.email || "Correo sin registrar"}</span>
+        </Card>
+      </div>
+
+      <div className="two-col">
+        <div className="stack">
+          <Card>
+            <div className="card-head">
+              <h3>Documentos del expediente ({studentDocs.length})</h3>
+              <Badge tone={statusTone(student.status)}>{student.status}</Badge>
+            </div>
+            {studentDocs.length === 0 ? (
+              <p className="sub">Aún no se han recibido documentos en este expediente.</p>
+            ) : (
+              <div className="stack">
+                {studentDocs.map((d) => (
+                  <div key={d.id} className="row-item">
+                    <div>
+                      <strong>{d.fileName}</strong>
+                      <div className="sub">
+                        {d.category} · {d.receivedAt}
+                      </div>
+                      {d.drivePath && <div className="sub">{d.drivePath}</div>}
+                    </div>
+                    <div className="head-action">
+                      <Badge
+                        tone={
+                          d.status === "Almacenado"
+                            ? "green"
+                            : d.status === "Pendiente de revisión"
+                              ? "amber"
+                              : "gray"
+                        }
+                      >
+                        {d.status}
+                      </Badge>
+                      {d.status === "Pendiente de revisión" && (
+                        <Button
+                          onClick={() => {
+                            setSelectedDocId(d.id);
+                            go("review");
+                          }}
+                        >
+                          Revisar
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
+
+          <Card>
+            <div className="card-head">
+              <h3>Participantes del grupo</h3>
+              <Badge tone="blue">{student.participants.length}</Badge>
+            </div>
+            <div className="stack">
+              {student.participants.map((p) => (
+                <div key={p.id} className="row-item">
+                  <div>
+                    <strong>{p.name}</strong>
+                    <div className="sub">{p.phone}</div>
+                  </div>
+                  <Badge tone={p.role === "Estudiante" ? "green" : "gray"}>{p.role}</Badge>
+                </div>
+              ))}
+            </div>
+          </Card>
+        </div>
 
         <Card>
-          <h3>Historial cronológico</h3>
+          <div className="card-head">
+            <h3>Historial cronológico</h3>
+            <Badge tone="gray">{student.timeline.length} eventos</Badge>
+          </div>
           <div className="stack">
             {student.timeline.map((ev) => (
-              <div key={ev.id} className="row-item">
+              <div
+                key={ev.id}
+                className="row-item"
+                style={{ borderLeft: "3px solid #2b5bf5", paddingLeft: 12 }}
+              >
                 <div>
                   <strong>{ev.action}</strong>
                   <div className="sub">{ev.detail}</div>

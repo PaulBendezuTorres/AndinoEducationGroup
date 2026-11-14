@@ -73,6 +73,7 @@ interface AppStoreValue {
   correctDocumentCategory: (docId: string, category: DocCategory) => void;
   // Sprint 4
   deactivateStudent: (id: string) => void;
+  reactivateStudent: (id: string) => void;
   resolveInactiveAlert: (alertId: string, authorizeDoc: boolean, reactivateStudent: boolean) => void;
   // Sprint 5
   toggleUserActive: (userId: string) => void;
@@ -612,6 +613,35 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
     notify("Estudiante pasado a Inactivo sin pérdida de historial.", "ok");
   };
 
+  const reactivateStudent = (id: string) => {
+    if (role === "Personal") {
+      notify("El rol Personal no puede reactivar estudiantes.", "err");
+      return;
+    }
+    const ts = nowFormatted();
+    setStudents((prev) =>
+      prev.map((s) =>
+        s.id === id
+          ? {
+              ...s,
+              status: "Activo",
+              timeline: [
+                ...s.timeline,
+                {
+                  id: `ev-${Date.now()}`,
+                  timestamp: ts,
+                  action: "Estudiante reactivado",
+                  actor: role,
+                  detail: "Expediente reactivado desde la ficha del estudiante.",
+                },
+              ],
+            }
+          : s,
+      ),
+    );
+    notify("Estudiante reactivado correctamente.", "ok");
+  };
+
   const resolveInactiveAlert = (
     alertId: string,
     authorizeDoc: boolean,
@@ -714,6 +744,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
         simulateFileUpload,
         correctDocumentCategory,
         deactivateStudent,
+        reactivateStudent,
         resolveInactiveAlert,
         toggleUserActive,
         resetAll,
