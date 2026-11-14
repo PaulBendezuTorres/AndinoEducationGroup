@@ -24,6 +24,12 @@ Respetar estrictamente la paleta de colores definida en `src/index.css`:
 ## 4. Diseño visual y responsividad
 - **No cambiar el diseño** existente al agregar nuevas funcionalidades; mantener la estética, espaciados, jerarquía y componentes actuales.
 - **Toda la web debe ser responsiva** (adaptada correctamente a móvil, tablet y escritorio).
+- **Escala tipográfica uniforme en todas las pantallas**:
+  - Título de página (`h1`): `24px` en escritorio / `20px` en móvil (`font-weight: 600`).
+  - Subtítulo de página (`.page-head p`): `14px`, color `#64748b`.
+  - Títulos de tarjeta/sección (`h3`): `16px` (`font-weight: 600`).
+  - Botones (`.button`): `13px` (`font-weight: 600`), altura `36px`.
+  - Texto base y tablas: `13px`–`14px`, color `#26364b`.
 
 ## 5. Estilo de respuesta
 - Responder siempre **brevemente y directo al grano**, sin explicaciones largas ni rodeos.

@@ -1352,3 +1352,35 @@ dd {
     margin-left: 0;
   }
 }
+
+/* Escala tipográfica uniforme */
+.page-head h1 {
+  font-size: 24px;
+  font-weight: 600;
+  color: #26364b;
+  line-height: 1.25;
+}
+.page-head p {
+  font-size: 14px;
+  color: #64748b;
+  line-height: 1.45;
+}
+.card h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #26364b;
+}
+.button {
+  font-size: 13px;
+  font-weight: 600;
+  height: 36px;
+}
+.table {
+  font-size: 13px;
+  color: #26364b;
+}
+@media (max-width: 768px) {
+  .page-head h1 {
+    font-size: 20px;
+  }
+}
