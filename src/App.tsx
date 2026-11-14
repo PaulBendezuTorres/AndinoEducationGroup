@@ -217,7 +217,7 @@ function Shell({
             </div>
           </div>
         </header>
-        <SprintBar go={go} />
+        <SprintBar page={page} go={go} />
         <main className="page-body">{children}</main>
       </div>
       {toast && (
