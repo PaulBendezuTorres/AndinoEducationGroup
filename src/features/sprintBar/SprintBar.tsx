@@ -7,7 +7,6 @@ export function SprintBar({ page, go }: { page: Page; go: (page: Page) => void }
   const {
     role,
     students,
-    selectedStudentId,
     simulateWhatsAppGroup,
     simulateRandomStudent,
     simulateFileUpload,
@@ -23,7 +22,8 @@ export function SprintBar({ page, go }: { page: Page; go: (page: Page) => void }
   if (!hasActions) return null;
 
   const inactiveStudent = students.find((s) => s.status === "Inactivo");
-  const activeStudent = students.find((s) => s.id === selectedStudentId) ?? students[0];
+  const pickRandomStudent = () =>
+    students.length > 0 ? students[Math.floor(Math.random() * students.length)] : undefined;
 
   if (!visible) {
     return (
@@ -56,8 +56,9 @@ export function SprintBar({ page, go }: { page: Page; go: (page: Page) => void }
         <>
           <Button
             onClick={() => {
-              if (activeStudent) {
-                simulateFileUpload(activeStudent.id, "Estudiante");
+              const target = pickRandomStudent();
+              if (target) {
+                simulateFileUpload(target.id, "Estudiante");
               }
             }}
           >
@@ -65,8 +66,9 @@ export function SprintBar({ page, go }: { page: Page; go: (page: Page) => void }
           </Button>
           <Button
             onClick={() => {
-              if (activeStudent) {
-                simulateFileUpload(activeStudent.id, "Personal de Andino");
+              const target = pickRandomStudent();
+              if (target) {
+                simulateFileUpload(target.id, "Personal de Andino");
               }
             }}
           >
