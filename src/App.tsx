@@ -1,149 +1,77 @@
 import { useState, type ReactNode } from "react";
-
-const A = "/assets";
-
-const icons = {
-  home: "0bd12.svg",
-  students: "6f7e8.svg",
-  files: "f9d2e.svg",
-  settings: "de35a.svg",
-  plug: "12e34.svg",
-  shield: "ff04f.svg",
-  help: "5a145.svg",
-  bell: "ed9f0.svg",
-  chevron: "4f9df.svg",
-  swap: "9299f.svg",
-  search: "097c0.svg",
-  down: "13670.svg",
-  info: "34771.svg",
-  back: "28c74.svg",
-  refresh: "62945.svg",
-  warning: "dec09.svg",
-  lock: "da8f1.svg",
-  pencil: "83584.svg",
-  scan: "221a6.svg",
-  folder: "c6883.svg",
-  message: "3ecf3.svg",
-  folderCheck: "25d8a.svg",
-  userCheck: "8a441.svg",
-  userPlus: "a95de.svg",
-  sparkles: "baffe.svg",
-};
-
-type Page =
-  | "login"
-  | "home"
-  | "students"
-  | "validation"
-  | "student"
-  | "documents"
-  | "review"
-  | "alerts"
-  | "integrations"
-  | "users";
-
-function Icon({ name, size = 18 }: { name: keyof typeof icons; size?: number }) {
-  return <img className="icon" src={`${A}/${icons[name]}`} width={size} height={size} alt="" />;
-}
-
-function Brand({ large = false }: { large?: boolean }) {
-  return (
-    <div className={`brand ${large ? "brand-large" : ""}`}>
-      <div className="brand-mark">
-        <img src={`${A}/ccc1e.png`} alt="" />
-      </div>
-      <div>
-        <strong>Andino</strong>
-        <span>Education Group</span>
-      </div>
-    </div>
-  );
-}
-
-function Badge({
-  children,
-  tone = "blue",
-}: {
-  children: ReactNode;
-  tone?: "blue" | "green" | "amber" | "gray";
-}) {
-  return <span className={`badge ${tone}`}>{children}</span>;
-}
-
-function Button({
-  children,
-  primary = false,
-  danger = false,
-  disabled = false,
-  onClick,
-}: {
-  children: ReactNode;
-  primary?: boolean;
-  danger?: boolean;
-  disabled?: boolean;
-  onClick?: () => void;
-}) {
-  return (
-    <button
-      className={`button ${primary ? "primary" : ""} ${danger ? "danger" : ""}`}
-      disabled={disabled}
-      onClick={onClick}
-    >
-      {children}
-    </button>
-  );
-}
+import { SprintBar } from "./features/sprintBar/SprintBar";
+import {
+  Badge,
+  Brand,
+  Button,
+  Card,
+  Field,
+  Icon,
+  InfoBanner,
+  PageHead,
+  icons,
+} from "./shared/components/UI";
+import { AppStoreProvider, useAppStore } from "./shared/context/AppStore";
+import type { DocCategory, Page, StudentStatus } from "./shared/types/domain";
 
 const navItems: { page: Page; label: string; icon: keyof typeof icons }[] = [
   { page: "home", label: "Inicio", icon: "home" },
   { page: "students", label: "Estudiantes", icon: "students" },
   { page: "documents", label: "Documentos", icon: "files" },
   { page: "alerts", label: "Alertas", icon: "bell" },
-  { page: "integrations", label: "Configuración", icon: "settings" },
   { page: "integrations", label: "Integraciones", icon: "plug" },
   { page: "users", label: "Usuarios", icon: "shield" },
 ];
 
+function statusTone(status: StudentStatus): "green" | "amber" | "gray" {
+  if (status === "Activo") return "green";
+  if (status === "Pendiente") return "amber";
+  return "gray";
+}
+
 function Sidebar({ page, go }: { page: Page; go: (page: Page) => void }) {
+  const { role, alerts } = useAppStore();
+  const openAlerts = alerts.filter((a) => a.status === "Abierta").length;
   const active =
     page === "validation" || page === "student"
       ? "students"
       : page === "review"
         ? "documents"
         : page;
+
+  const visibleNav = navItems.filter((item) => {
+    if (role === "Personal" && (item.page === "integrations" || item.page === "users")) return false;
+    if (role === "Encargado" && item.page === "users") return false;
+    return true;
+  });
+
   return (
     <aside className="sidebar">
       <Brand />
       <div className="side-label">GESTIÓN DOCUMENTAL</div>
       <nav>
-        {navItems.map((item, index) => (
+        {visibleNav.map((item, index) => (
           <button
+            type="button"
             key={`${item.label}-${index}`}
-            className={
-              active === item.page && !(item.label === "Configuración" && page === "integrations")
-                ? "active"
-                : ""
-            }
+            className={active === item.page ? "active" : ""}
             onClick={() => go(item.page)}
           >
             <Icon name={item.icon} />
             <span>{item.label}</span>
-            {item.label === "Alertas" && <Badge tone="amber">4</Badge>}
+            {item.label === "Alertas" && openAlerts > 0 && (
+              <Badge tone="amber">{openAlerts}</Badge>
+            )}
           </button>
         ))}
       </nav>
       <div className="side-bottom">
-        <div className="demo-card">
-          <Badge>Demostración</Badge>
-          <p>Datos ficticios. Sin conexiones reales.</p>
-        </div>
         <div className="account">
-          <span>CR</span>
+          <span>{role.slice(0, 2).toUpperCase()}</span>
           <div>
             <strong>Carolina Ríos</strong>
-            <small>Administradora</small>
+            <small>{role}</small>
           </div>
-          <Icon name="swap" size={14} />
         </div>
       </div>
     </aside>
@@ -153,143 +81,56 @@ function Sidebar({ page, go }: { page: Page; go: (page: Page) => void }) {
 function Shell({
   page,
   go,
-  crumb,
+  breadcrumb,
   children,
 }: {
   page: Page;
-  go: (p: Page) => void;
-  crumb: string;
+  go: (page: Page) => void;
+  breadcrumb: string;
   children: ReactNode;
 }) {
+  const { toast, clearToast } = useAppStore();
   return (
     <div className="app-shell">
       <Sidebar page={page} go={go} />
-      <div className="workspace">
+      <div className="main-area">
         <header className="topbar">
           <div className="breadcrumb">
-            <span>Espacio de trabajo</span>
+            <span>Andino Education Group</span>
             <Icon name="chevron" size={14} />
-            <strong>{crumb}</strong>
+            <strong>{breadcrumb}</strong>
           </div>
-          <div className="utilities">
-            <span>14 oct 2026 · Lima</span>
-            <Badge>Entorno de demostración</Badge>
-            <Icon name="help" />
-            <Icon name="bell" />
+          <div className="topbar-actions">
+            <button type="button" className="icon-btn" onClick={() => go("alerts")} aria-label="Alertas">
+              <Icon name="bell" />
+            </button>
           </div>
         </header>
-        <main>{children}</main>
+        <SprintBar go={go} />
+        <main className="page-body">{children}</main>
       </div>
-    </div>
-  );
-}
-
-function PageHead({
-  title,
-  subtitle,
-  action,
-}: {
-  title: string;
-  subtitle: string;
-  action?: ReactNode;
-}) {
-  return (
-    <div className="page-head">
-      <div>
-        <h1>{title}</h1>
-        <p>{subtitle}</p>
-      </div>
-      {action}
-    </div>
-  );
-}
-
-function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return <section className={`card ${className}`}>{children}</section>;
-}
-
-function Tabs({ items, active = 0 }: { items: string[]; active?: number }) {
-  return (
-    <div className="tabs">
-      {items.map((item, i) => (
-        <button className={i === active ? "active" : ""} key={item}>
-          {item}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function Filters({ search, filters }: { search: string; filters: string[] }) {
-  return (
-    <div className="filters">
-      <div className="search">
-        <Icon name="search" />
-        {search}
-      </div>
-      {filters.map((filter) => (
-        <button key={filter}>
-          <Icon name="down" size={14} />
-          {filter}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function Pager({ label }: { label: string }) {
-  return (
-    <div className="pager">
-      <span>{label}</span>
-      <div>
-        <span>8 por página</span>
-        <button>‹</button>
-        <b>1</b>
-        <button>›</button>
-      </div>
+      {toast && (
+        <div className={`toast ${toast.tone}`}>
+          <span>{toast.text}</span>
+          <button type="button" onClick={clearToast}>
+            Cerrar
+          </button>
+        </div>
+      )}
     </div>
   );
 }
 
 function Login({ go }: { go: (p: Page) => void }) {
-  const features: [keyof typeof icons, string, string][] = [
-    ["message", "Recepción en WhatsApp", "Identifica al estudiante y al remitente."],
-    ["scan", "Clasificación asistida", "La IA sugiere; el personal revisa."],
-    ["folderCheck", "Destino en Google Drive", "Conserva la carpeta existente y el historial."],
-  ];
   return (
-    <div className="login">
-      <section className="login-story">
+    <div className="login-page">
+      <section className="login-brand">
         <Brand large />
-        <div className="login-copy">
-          <Badge>Portal interno · Personal de agencia</Badge>
-          <h1>
-            Cada documento,
-            <br />
-            en su lugar.
-          </h1>
-          <p>
-            Un espacio de trabajo para organizar documentos y acompañar a tus estudiantes con
-            trazabilidad.
-          </p>
-          <div className="feature-list">
-            {features.map(([icon, title, text]) => (
-              <div className="feature" key={title}>
-                <span>
-                  <Icon name={icon} />
-                </span>
-                <div>
-                  <strong>{title}</strong>
-                  <small>{text}</small>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-        <small className="legal">
-          Prototipo de demostración. El flujo de grupos es un supuesto del proyecto; no reemplaza
-          WhatsApp ni Google Drive.
-        </small>
+        <h1>Gestión documental automatizada para asesoría académica</h1>
+        <p>
+          Centraliza los expedientes de WhatsApp Business, clasifica documentos con IA y resguarda
+          cada archivo en Google Drive con trazabilidad completa.
+        </p>
       </section>
       <section className="login-access">
         <form
@@ -298,852 +139,626 @@ function Login({ go }: { go: (p: Page) => void }) {
             go("home");
           }}
         >
-          <Badge>Entorno de demostración</Badge>
-          <div>
-            <h2>Bienvenido de nuevo</h2>
-            <p>Accede a la gestión documental de Andino.</p>
-          </div>
+          <h2>Iniciar sesión</h2>
+          <p className="login-sub">Accede a la gestión documental de Andino.</p>
           <label>
-            Correo del personal
-            <input defaultValue="carolina.rios@andino.example" />
+            Correo electrónico
+            <input type="email" defaultValue="carolina@andino.edu" />
           </label>
           <label>
             Contraseña
-            <input type="password" defaultValue="demostracion" />
+            <input type="password" defaultValue="••••••••" />
           </label>
-          <div className="login-options">
-            <label>
-              <input type="checkbox" /> Recordar sesión
-            </label>
-            <button type="button">Olvidé mi contraseña</button>
-          </div>
-          <Button primary>Acceder</Button>
-          <p>
-            Acceso exclusivo para personal autorizado.
-            <br />
-            ¿Necesitas una cuenta? Contacta a tu administrador.
-          </p>
-          <div className="security">
-            <Icon name="lock" size={16} />
-            Sin autenticación ni servicios reales conectados.
-          </div>
+          <Button primary type="submit">
+            Ingresar al panel
+          </Button>
         </form>
       </section>
     </div>
   );
 }
 
-const studentRows = [
-  ["Ana Torres", "AE-001", "Australia", "Carolina Ríos", "Activo", "3"],
-  ["Diego Ramírez", "AE-002", "Australia", "Luis Salazar", "Activo", "2"],
-  ["Sofía Herrera", "AE-003", "Australia", "Carolina Ríos", "Pendiente", "1"],
-  ["Lucía Mendoza", "AE-004", "Australia", "Luis Salazar", "Inactivo", "1"],
-  ["Valentina Castro", "AE-005", "Australia", "Carolina Ríos", "Activo", "2"],
-  ["Mateo Silva", "AE-006", "Australia", "Luis Salazar", "Activo", "1"],
-  ["Camila Vargas", "AE-007", "Australia", "Carolina Ríos", "Activo", "1"],
-  ["Martín Rojas", "AE-008", "Australia", "Carolina Ríos", "Pendiente", "1"],
-];
+function Home({ go }: { go: (p: Page) => void }) {
+  const { students, documents, alerts, setSelectedStudentId, setSelectedDocId } = useAppStore();
+  const pendingDocs = documents.filter((d) => d.status === "Pendiente de revisión");
+  const storedDocs = documents.filter((d) => d.status === "Almacenado");
+  const openAlerts = alerts.filter((a) => a.status === "Abierta");
+
+  return (
+    <>
+      <PageHead
+        title="Panel de control"
+        subtitle="Resumen operativo de estudiantes, documentos y alertas activas."
+        action={
+          <Button primary onClick={() => go("students")}>
+            Ver estudiantes
+          </Button>
+        }
+      />
+      <div className="metrics-grid">
+        <Card className="metric">
+          <small>Total estudiantes</small>
+          <strong>{students.length}</strong>
+          <span>{students.filter((s) => s.status === "Activo").length} activos</span>
+        </Card>
+        <Card className="metric">
+          <small>Documentos almacenados</small>
+          <strong>{storedDocs.length}</strong>
+          <span>En Google Drive</span>
+        </Card>
+        <Card className="metric">
+          <small>Pendientes de revisión</small>
+          <strong>{pendingDocs.length}</strong>
+          <span>Requieren validación</span>
+        </Card>
+        <Card className="metric">
+          <small>Alertas abiertas</small>
+          <strong>{openAlerts.length}</strong>
+          <span>Prioridad operativa</span>
+        </Card>
+      </div>
+
+      <div className="home-grid">
+        <Card>
+          <div className="card-head">
+            <h3>Estudiantes recientes</h3>
+            <Button onClick={() => go("students")}>Ver todos</Button>
+          </div>
+          <div className="table-wrap">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Estudiante</th>
+                  <th>Estado</th>
+                  <th>Carpeta Drive</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {students.slice(0, 5).map((s) => (
+                  <tr key={s.id}>
+                    <td>
+                      <strong>{s.name}</strong>
+                      <div className="sub">{s.phone}</div>
+                    </td>
+                    <td>
+                      <Badge tone={statusTone(s.status)}>{s.status}</Badge>
+                    </td>
+                    <td>{s.driveFolder || "Sin vincular"}</td>
+                    <td>
+                      <Button
+                        onClick={() => {
+                          setSelectedStudentId(s.id);
+                          go(s.status === "Pendiente" ? "validation" : "student");
+                        }}
+                      >
+                        {s.status === "Pendiente" ? "Validar" : "Ver ficha"}
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+
+        <Card>
+          <div className="card-head">
+            <h3>Documentos por revisar</h3>
+            <Button onClick={() => go("documents")}>Ir a documentos</Button>
+          </div>
+          {pendingDocs.length === 0 ? (
+            <p className="sub">No hay documentos pendientes de revisión.</p>
+          ) : (
+            <div className="stack">
+              {pendingDocs.map((d) => (
+                <div key={d.id} className="row-item">
+                  <div>
+                    <strong>{d.fileName}</strong>
+                    <div className="sub">
+                      {d.studentName} · {d.category}
+                    </div>
+                  </div>
+                  <Button
+                    onClick={() => {
+                      setSelectedDocId(d.id);
+                      go("review");
+                    }}
+                  >
+                    Revisar
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </Card>
+      </div>
+    </>
+  );
+}
 
 function Students({ go }: { go: (p: Page) => void }) {
+  const { students, setSelectedStudentId, simulateWhatsAppGroup } = useAppStore();
+  const [filter, setFilter] = useState<"Todos" | StudentStatus>("Todos");
+  const [query, setQuery] = useState("");
+
+  const filtered = students.filter((s) => {
+    const matchesStatus = filter === "Todos" || s.status === filter;
+    const q = query.trim().toLowerCase();
+    const matchesQuery =
+      !q ||
+      s.name.toLowerCase().includes(q) ||
+      s.phone.toLowerCase().includes(q) ||
+      s.email.toLowerCase().includes(q);
+    return matchesStatus && matchesQuery;
+  });
+
   return (
     <>
       <PageHead
         title="Estudiantes"
-        subtitle="Consulta expedientes y valida los registros detectados en grupos de WhatsApp."
+        subtitle="Listado de expedientes detectados desde WhatsApp Business."
         action={
-          <Button primary onClick={() => go("validation")}>
-            <Icon name="userCheck" /> Validar pendientes (2)
+          <Button
+            primary
+            onClick={() => {
+              simulateWhatsAppGroup();
+              go("validation");
+            }}
+          >
+            + Nuevo grupo WhatsApp
           </Button>
         }
       />
-      <Tabs items={["Todos (8)", "Pendientes (2)", "Activos (5)", "Inactivos (1)"]} />
-      <Filters
-        search="Buscar por nombre, correo o ID"
-        filters={["Estado: todos", "Responsable: todos"]}
-      />
-      <Card className="table-card">
-        <table>
-          <thead>
-            <tr>
-              <th>ESTUDIANTE</th>
-              <th>DESTINO</th>
-              <th>RESPONSABLE</th>
-              <th>ESTADO</th>
-              <th>DOCUMENTOS</th>
-              <th>ACCIÓN</th>
-            </tr>
-          </thead>
-          <tbody>
-            {studentRows.map((r) => (
-              <tr key={r[1]}>
-                <td>
-                  <button className="link" onClick={() => go("student")}>
-                    {r[0]}
-                  </button>
-                  <small>{r[1]}</small>
-                </td>
-                <td>{r[2]}</td>
-                <td>{r[3]}</td>
-                <td>
-                  <Badge
-                    tone={r[4] === "Activo" ? "green" : r[4] === "Pendiente" ? "amber" : "gray"}
-                  >
-                    {r[4]}
-                  </Badge>
-                </td>
-                <td>{r[5]}</td>
-                <td>
-                  <button
-                    className="link"
-                    onClick={() => go(r[4] === "Pendiente" ? "validation" : "student")}
-                  >
-                    {r[4] === "Pendiente" ? "Validar registro →" : "Abrir ficha →"}
-                  </button>
-                </td>
-              </tr>
+      <Card>
+        <div className="toolbar">
+          <div className="tabs">
+            {(["Todos", "Pendiente", "Activo", "Inactivo"] as const).map((tab) => (
+              <button
+                type="button"
+                key={tab}
+                className={filter === tab ? "active" : ""}
+                onClick={() => setFilter(tab)}
+              >
+                {tab}
+              </button>
             ))}
-          </tbody>
-        </table>
-        <Pager label="Mostrando 8 de 8 estudiantes" />
-      </Card>
-      <p className="footnote">
-        Un registro pendiente no se activa hasta completar los datos y vincular una carpeta
-        existente. Desactivar conserva documentos e historial.
-      </p>
-    </>
-  );
-}
-
-function Metric({
-  title,
-  value,
-  note,
-  icon,
-}: {
-  title: string;
-  value: string;
-  note: string;
-  icon?: keyof typeof icons;
-}) {
-  return (
-    <Card className="metric">
-      <div>
-        <span>{title}</span>
-        {icon && <Icon name={icon} />}
-      </div>
-      <strong>{value}</strong>
-      <small>{note}</small>
-    </Card>
-  );
-}
-
-function Home({ go }: { go: (p: Page) => void }) {
-  return (
-    <>
-      <PageHead
-        title="Tu equipo, al día"
-        subtitle="Prioriza las revisiones y los registros que necesitan atención."
-        action={
-          <Button primary onClick={() => go("documents")}>
-            → &nbsp; Revisar pendientes
-          </Button>
-        }
-      />
-      <div className="metrics">
-        <Metric
-          title="Estudiantes"
-          value="8"
-          note="5 activos · 2 pendientes · 1 inactivo"
-          icon="students"
-        />
-        <Metric
-          title="Documentos procesados"
-          value="10"
-          note="6 almacenados · 4 por revisar"
-          icon="files"
-        />
-        <Metric
-          title="Revisiones pendientes"
-          value="4"
-          note="Requieren intervención humana"
-          icon="scan"
-        />
-        <Metric title="Alertas abiertas" value="4" note="1 de estudiante inactivo" icon="bell" />
-      </div>
-      <div className="dashboard-grid">
-        <div>
-          <div className="section-title">
-            <h3>Documentos por revisar</h3>
-            <button onClick={() => go("documents")}>Ver todos →</button>
           </div>
-          <Card className="table-card">
-            <table>
-              <thead>
-                <tr>
-                  <th>ESTUDIANTE</th>
-                  <th>DOCUMENTO</th>
-                  <th>ESTADO</th>
-                  <th>ACCIÓN</th>
+          <input
+            className="search-input"
+            placeholder="Buscar por nombre, teléfono o correo..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        </div>
+
+        <div className="table-wrap">
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Estudiante</th>
+                <th>Grupo WhatsApp</th>
+                <th>Destino / Programa</th>
+                <th>Carpeta Drive</th>
+                <th>Estado</th>
+                <th>Acción</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((s) => (
+                <tr key={s.id}>
+                  <td>
+                    <strong>{s.name}</strong>
+                    <div className="sub">{s.phone}</div>
+                  </td>
+                  <td>{s.whatsappGroup}</td>
+                  <td>{s.destination}</td>
+                  <td>{s.driveFolder || "Sin vincular"}</td>
+                  <td>
+                    <Badge tone={statusTone(s.status)}>{s.status}</Badge>
+                  </td>
+                  <td>
+                    <Button
+                      onClick={() => {
+                        setSelectedStudentId(s.id);
+                        go(s.status === "Pendiente" ? "validation" : "student");
+                      }}
+                    >
+                      {s.status === "Pendiente" ? "Validar" : "Abrir ficha"}
+                    </Button>
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {[
-                  ["Ana Torres", "Pasaporte", "Revisar →"],
-                  ["Lucía Mendoza", "Extracto bancario", "Ver alerta →"],
-                  ["Diego Ramírez", "Visa anterior", "Revisar →"],
-                ].map((r) => (
-                  <tr key={r[0]}>
-                    <td>
-                      <b className="blue">{r[0]}</b>
-                      <small>
-                        AE-00
-                        {r[0] === "Ana Torres"
-                          ? "1 · Activo"
-                          : r[0] === "Lucía Mendoza"
-                            ? "4 · Inactivo"
-                            : "2 · Activo"}
-                      </small>
-                    </td>
-                    <td>{r[1]}</td>
-                    <td>
-                      <Badge tone="amber">Pendiente de revisión</Badge>
-                    </td>
-                    <td>
-                      <button
-                        className="link"
-                        onClick={() => go(r[2].startsWith("Ver") ? "alerts" : "review")}
-                      >
-                        {r[2]}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <Pager label="Mostrando 3 de 4 revisiones" />
-          </Card>
-          <Card className="flow">
-            <h3>Estado del flujo</h3>
-            <p>Distribución de los 12 documentos de estudiantes</p>
-            <div className="flowbar">
-              <i />
-              <i />
-              <i />
-              <i />
-            </div>
-            <div>
-              <span>6 almacenados</span>
-              <span>4 en revisión</span>
-              <span>1 en clasificación</span>
-              <span>1 recibido</span>
-            </div>
-          </Card>
+              ))}
+            </tbody>
+          </table>
         </div>
-        <div className="dashboard-side">
-          <Card>
-            <h3>Últimas alertas</h3>
-            <p>4 abiertas · ordenadas por prioridad</p>
-            <div className="alert-mini">
-              <b>Estudiante inactivo</b>
-              <time>10:18</time>
-              <span>Lucía envió un nuevo documento. No se ha guardado en Drive.</span>
-            </div>
-            <div className="alert-mini">
-              <b>Carpeta por vincular</b>
-              <time>09:52</time>
-              <span>Sofía necesita una carpeta de destino.</span>
-            </div>
-            <Button onClick={() => go("alerts")}>→ &nbsp; Ver alertas</Button>
-          </Card>
-          <Card>
-            <h3>Registros por validar</h3>
-            <p>Sofía Herrera y Martín Rojas están pendientes de validación.</p>
-            <Button onClick={() => go("validation")}>
-              <Icon name="userCheck" /> Validar estudiantes
-            </Button>
-            <small>Cifras de ejemplo · corte: 14 oct, 10:30.</small>
-          </Card>
-        </div>
-      </div>
+      </Card>
     </>
-  );
-}
-
-function InfoBanner({ children }: { children: ReactNode }) {
-  return (
-    <div className="info-banner">
-      <Icon name="info" />
-      <div>{children}</div>
-    </div>
-  );
-}
-
-function Field({
-  label,
-  value,
-  placeholder,
-}: {
-  label: string;
-  value?: string;
-  placeholder?: string;
-}) {
-  return (
-    <label className="field">
-      {label}
-      <input defaultValue={value} placeholder={placeholder} />
-    </label>
   );
 }
 
 function Validation({ go }: { go: (p: Page) => void }) {
+  const { students, selectedStudentId, confirmAndActivateStudent } = useAppStore();
+  const student = students.find((s) => s.id === selectedStudentId) ?? students[0];
+
+  const [name, setName] = useState(student?.name ?? "");
+  const [email, setEmail] = useState(student?.email ?? "");
+  const [phone, setPhone] = useState(student?.phone ?? "");
+  const [destination, setDestination] = useState(student?.destination ?? "");
+  const [driveFolder, setDriveFolder] = useState(student?.driveFolder ?? "");
+  const [participants, setParticipants] = useState(student?.participants ?? []);
+
+  if (!student) return null;
+
   return (
     <>
       <PageHead
-        title="Validar a Sofía Herrera"
-        subtitle="AE-003 · Registro pendiente · Grupo detectado el 14 oct 2026, 09:45 (simulado)."
-        action={
-          <Button onClick={() => go("students")}>
-            <Icon name="back" /> Volver a estudiantes
-          </Button>
-        }
+        title={`Validar: ${student.name}`}
+        subtitle="Confirma los datos del estudiante, etiqueta participantes y vincula su carpeta de Drive."
+        back="Volver a Estudiantes"
+        onBack={() => go("students")}
       />
       <InfoBanner>
-        <strong>Datos detectados: revisa antes de activar</strong>
-        <p>
-          Información de ejemplo obtenida al crear el grupo «Andino | Sofía Herrera». Confirma la
-          identidad y el rol de cada integrante.
-        </p>
+        Mientras el estudiante esté en estado Pendiente o sin carpeta de Drive vinculada, ningún
+        documento se almacenará automáticamente.
       </InfoBanner>
-      <div className="validation-grid">
-        <div>
-          <Card>
-            <h3>Datos del estudiante</h3>
-            <p>Completa o corrige los datos detectados.</p>
-            <div className="field-grid">
-              <Field label="Nombre completo *" value="Sofía Herrera" />
-              <Field label="Correo *" placeholder="Completar correo del estudiante" />
-              <Field label="Teléfono detectado *" value="+51 ••• ••• 103" />
-              <Field label="Destino / programa" value="Australia · Inglés general" />
-            </div>
-            <div className="owner">
-              Responsable del expediente <b>Carolina Ríos</b>
-              <button>Cambiar</button>
-            </div>
-          </Card>
-          <h3 className="outside-title">Integrantes del grupo</h3>
-          <Card className="table-card">
-            <table>
-              <thead>
-                <tr>
-                  <th>INTEGRANTE</th>
-                  <th>ROL ASIGNADO</th>
-                  <th>ORIGEN</th>
-                </tr>
-              </thead>
-              <tbody>
-                {[
-                  ["Sofía Herrera", "+51 ••• ••• 103", "Estudiante", "Detectado"],
-                  ["Carolina Ríos", "Personal de Andino", "Personal", "Directorio"],
-                  ["Luis Salazar", "Personal de Andino", "Personal", "Directorio"],
-                ].map((r) => (
-                  <tr key={r[0]}>
-                    <td>
-                      <b className="blue">{r[0]}</b>
-                      <small>{r[1]}</small>
-                    </td>
-                    <td>
-                      <Button>
-                        <Icon name="down" size={14} />
-                        {r[2]}
-                      </Button>
-                    </td>
-                    <td>{r[3]}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </Card>
-          <p className="footnote">Los documentos enviados por personal quedan excluidos de IA.</p>
-        </div>
-        <div className="validation-side">
-          <Card>
-            <h3>Carpeta existente de Google Drive</h3>
-            <p>Vincula un destino, no crees una carpeta duplicada.</p>
-            <Badge tone="amber">Pendiente de vinculación</Badge>
+      <div className="two-col">
+        <Card>
+          <h3>Datos del estudiante</h3>
+          <div className="form-grid">
+            <Field label="Nombre completo" value={name} onChange={setName} />
             <Field
-              label="Enlace o búsqueda de carpeta *"
-              placeholder="Buscar carpeta existente..."
+              label="Correo electrónico"
+              value={email}
+              onChange={setEmail}
+              placeholder="correo@ejemplo.com"
             />
-            <Button>
-              <Icon name="folder" /> Seleccionar carpeta
+            <Field label="Teléfono" value={phone} onChange={setPhone} />
+            <Field label="Destino / Programa" value={destination} onChange={setDestination} />
+            <Field
+              label="Carpeta de Google Drive"
+              value={driveFolder}
+              onChange={setDriveFolder}
+              placeholder={`Andino Drive / Estudiantes / ${name}`}
+            />
+          </div>
+          <div className="sticky-actions">
+            <Button
+              onClick={() => setDriveFolder(`Andino Drive / Estudiantes / ${name}`)}
+            >
+              Sugerir carpeta Drive
             </Button>
-            <small>Solo se guardarán documentos tras completar la validación.</small>
-          </Card>
-          <Card>
-            <h3>Comprobación de duplicados</h3>
-            <p className="success">✓ &nbsp; Sin coincidencias por teléfono</p>
-            <p>
-              Búsqueda simulada en 8 registros. Completa el correo para finalizar la comprobación.
-            </p>
-            <Button>Buscar registros similares</Button>
-          </Card>
-        </div>
-      </div>
-      <Card className="sticky-actions">
-        <div>
-          <b>Faltan 2 requisitos para activar</b>
-          <small>Completar el correo y vincular la carpeta de Drive.</small>
-        </div>
-        <div>
-          <Button>Guardar borrador</Button>
-          <Button disabled>
-            <Icon name="lock" /> Confirmar y activar
-          </Button>
-        </div>
-      </Card>
-    </>
-  );
-}
+            <Button
+              primary
+              onClick={() => {
+                const res = confirmAndActivateStudent(student.id, {
+                  name,
+                  email,
+                  phone,
+                  destination,
+                  driveFolder,
+                  participants,
+                });
+                if (res.ok) go("student");
+              }}
+            >
+              Confirmar y activar
+            </Button>
+          </div>
+        </Card>
 
-const documents = [
-  ["ana_pasaporte.pdf", "Ana Torres", "Pasaporte", "14 oct · 10:12", "Pendiente de revisión"],
-  [
-    "lucia_extracto.pdf",
-    "Lucía Mendoza",
-    "Extracto bancario",
-    "14 oct · 10:18",
-    "Pendiente de revisión",
-  ],
-  ["mateo_dni.pdf", "Mateo Silva", "DNI", "14 oct · 10:05", "En clasificación"],
-  [
-    "sofia_certificado.pdf",
-    "Sofía Herrera",
-    "Certificado de estudios",
-    "14 oct · 09:52",
-    "Pendiente de revisión",
-  ],
-  ["martin_pasaporte.pdf", "Martín Rojas", "Pasaporte", "14 oct · 09:48", "Recibido"],
-  ["diego_visa.pdf", "Diego Ramírez", "Visa anterior", "14 oct · 09:35", "Pendiente de revisión"],
-  ["guia_interna.pdf", "Luis Salazar", "Sin clasificación", "14 oct · 09:20", "Excluido de IA"],
-];
-
-function Documents({ go }: { go: (p: Page) => void }) {
-  return (
-    <>
-      <PageHead
-        title="Documentos"
-        subtitle="12 documentos de estudiantes y 1 archivo de personal excluido. Recepciones de ejemplo."
-        action={
-          <Button primary onClick={() => go("review")}>
-            <Icon name="scan" /> Revisiones pendientes (4)
-          </Button>
-        }
-      />
-      <Tabs items={["Todos (13)", "Por revisar (4)", "Almacenados (6)", "Excluidos (1)"]} />
-      <Filters
-        search="Buscar archivo o estudiante"
-        filters={["Estado: todos", "Categoría: todas", "Remitente: todos"]}
-      />
-      <Card className="table-card">
-        <table>
-          <thead>
-            <tr>
-              <th>ARCHIVO / ESTUDIANTE</th>
-              <th>REMITENTE / ROL</th>
-              <th>CATEGORÍA</th>
-              <th>FECHA Y HORA</th>
-              <th>ESTADO</th>
-              <th>ACCIÓN</th>
-            </tr>
-          </thead>
-          <tbody>
-            {documents.map((r) => (
-              <tr key={r[0]}>
-                <td>
-                  <b className="blue">{r[0]}</b>
-                  <small>{r[1]}</small>
-                </td>
-                <td>
-                  {r[1]}
-                  <small>{r[0] === "guia_interna.pdf" ? "Personal" : "Estudiante"}</small>
-                </td>
-                <td>{r[2]}</td>
-                <td>{r[3]}</td>
-                <td>
-                  <Badge
-                    tone={
-                      r[4].includes("Pendiente")
-                        ? "amber"
-                        : r[4] === "Excluido de IA"
-                          ? "gray"
-                          : "blue"
-                    }
-                  >
-                    {r[4]}
-                  </Badge>
-                </td>
-                <td>
-                  <button className="link" onClick={() => go("review")}>
-                    {r[4] === "Excluido de IA" ? "Ver origen →" : "Ver detalle →"}
-                  </button>
-                </td>
-              </tr>
+        <Card>
+          <h3>Participantes del grupo ({student.whatsappGroup})</h3>
+          <div className="stack">
+            {participants.map((p) => (
+              <div key={p.id} className="row-item">
+                <div>
+                  <strong>{p.name}</strong>
+                  <div className="sub">{p.phone}</div>
+                </div>
+                <select
+                  className="select-input"
+                  value={p.role}
+                  onChange={(e) =>
+                    setParticipants((prev) =>
+                      prev.map((item) =>
+                        item.id === p.id
+                          ? { ...item, role: e.target.value as "Estudiante" | "Personal de Andino" }
+                          : item,
+                      ),
+                    )
+                  }
+                >
+                  <option value="Estudiante">Estudiante</option>
+                  <option value="Personal de Andino">Personal de Andino</option>
+                </select>
+              </div>
             ))}
-          </tbody>
-        </table>
-        <Pager label="Mostrando 7 de 13 archivos · Página 1 de 2" />
-      </Card>
-      <InfoBanner>
-        <strong>Los archivos del personal no pasan por IA</strong>
-        <p>
-          Se conservan como recepciones excluidas: no se clasifican ni se incorporan como documentos
-          del estudiante.
-        </p>
-      </InfoBanner>
+          </div>
+        </Card>
+      </div>
     </>
   );
 }
 
 function StudentDetail({ go }: { go: (p: Page) => void }) {
+  const {
+    students,
+    documents,
+    selectedStudentId,
+    deactivateStudent,
+    simulateFileUpload,
+    setSelectedDocId,
+  } = useAppStore();
+  const student = students.find((s) => s.id === selectedStudentId) ?? students[0];
+  if (!student) return null;
+
+  const studentDocs = documents.filter((d) => d.studentId === student.id);
+
   return (
     <>
       <PageHead
-        title="Ana Torres"
-        subtitle="AE-001 · Expediente del estudiante · Responsable: Carolina Ríos."
+        title={student.name}
+        subtitle={`${student.destination} · ${student.phone}`}
+        back="Volver a Estudiantes"
+        onBack={() => go("students")}
         action={
-          <div className="actions">
-            <Button>
-              <Icon name="pencil" /> Editar datos
+          <div className="head-action">
+            <Button onClick={() => simulateFileUpload(student.id, "Estudiante")}>
+              + Recibir archivo
             </Button>
-            <Button danger>Desactivar</Button>
+            {student.status === "Activo" && (
+              <Button danger onClick={() => deactivateStudent(student.id)}>
+                Pasar a Inactivo
+              </Button>
+            )}
           </div>
         }
       />
-      <div className="student-layout">
-        <div className="student-aside">
-          <Card>
-            <div className="profile">
-              <span>AT</span>
-              <div>
-                <b>Ana Torres</b>
-                <Badge tone="green">Activo</Badge>
-              </div>
-            </div>
-            <dl>
-              <dt>Correo</dt>
-              <dd>ana.torres@example.com</dd>
-              <dt>Teléfono</dt>
-              <dd>+51 ••• ••• 101</dd>
-              <dt>Destino</dt>
-              <dd>Australia</dd>
-              <dt>Programa</dt>
-              <dd>Inglés general</dd>
-              <dt>Registro</dt>
-              <dd>08 oct 2026</dd>
-            </dl>
-          </Card>
-          <Card>
-            <h3>Vinculaciones</h3>
-            <p className="eyebrow">WHATSAPP · SIMULADO</p>
-            <b>Andino | Ana Torres</b>
-            <p>1 estudiante · 2 integrantes del personal</p>
-            <p className="eyebrow">GOOGLE DRIVE · SIMULADO</p>
-            <button className="link">AE-001_Ana_Torres ↗</button>
-            <p>Carpeta existente vinculada</p>
-          </Card>
-        </div>
-        <div>
-          <Tabs items={["Documentos (3)", "Historial", "Vinculaciones"]} />
-          <div className="metrics three">
-            <Metric title="" value="3" note="Recibidos" />
-            <Metric title="" value="2" note="Almacenados" />
-            <Metric title="" value="1" note="Por revisar" />
+
+      <div className="two-col">
+        <Card>
+          <div className="card-head">
+            <h3>Expediente y documentos ({studentDocs.length})</h3>
+            <Badge tone={statusTone(student.status)}>{student.status}</Badge>
           </div>
-          <Card className="table-card">
-            <table>
-              <thead>
-                <tr>
-                  <th>DOCUMENTO</th>
-                  <th>CATEGORÍA</th>
-                  <th>ESTADO</th>
-                  <th>ACCIÓN</th>
-                </tr>
-              </thead>
-              <tbody>
-                {[
-                  [
-                    "ana_pasaporte.pdf",
-                    "14 oct 2026 · 10:12",
-                    "Pasaporte",
-                    "Pendiente de revisión",
-                  ],
-                  [
-                    "ana_certificado.pdf",
-                    "13 oct 2026 · 16:40",
-                    "Certificado de estudios",
-                    "Almacenado",
-                  ],
-                  ["ana_extracto.pdf", "12 oct 2026 · 11:20", "Extracto bancario", "Almacenado"],
-                ].map((r) => (
-                  <tr key={r[0]}>
-                    <td>
-                      <b>{r[0]}</b>
-                      <small>{r[1]}</small>
-                    </td>
-                    <td>{r[2]}</td>
-                    <td>
-                      <Badge tone={r[3] === "Almacenado" ? "green" : "amber"}>{r[3]}</Badge>
-                    </td>
-                    <td>
-                      <button className="link" onClick={() => go("review")}>
-                        {r[3] === "Almacenado" ? "Ver detalle →" : "Revisar →"}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <Pager label="Mostrando 3 de 3 documentos" />
-          </Card>
-          <InfoBanner>
-            <strong>El historial se conserva</strong>
-            <p>
-              Desactivar el estudiante no elimina su expediente. Los documentos nuevos requieren
-              revisión y autorización de almacenamiento.
-            </p>
-          </InfoBanner>
-        </div>
+          <p className="sub">Carpeta Drive: {student.driveFolder || "Sin vincular"}</p>
+          <div className="stack">
+            {studentDocs.map((d) => (
+              <div key={d.id} className="row-item">
+                <div>
+                  <strong>{d.fileName}</strong>
+                  <div className="sub">
+                    {d.category} · {d.receivedAt}
+                  </div>
+                </div>
+                <div className="head-action">
+                  <Badge
+                    tone={
+                      d.status === "Almacenado"
+                        ? "green"
+                        : d.status === "Pendiente de revisión"
+                          ? "amber"
+                          : "gray"
+                    }
+                  >
+                    {d.status}
+                  </Badge>
+                  {d.status === "Pendiente de revisión" && (
+                    <Button
+                      onClick={() => {
+                        setSelectedDocId(d.id);
+                        go("review");
+                      }}
+                    >
+                      Revisar
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        <Card>
+          <h3>Historial cronológico</h3>
+          <div className="stack">
+            {student.timeline.map((ev) => (
+              <div key={ev.id} className="row-item">
+                <div>
+                  <strong>{ev.action}</strong>
+                  <div className="sub">{ev.detail}</div>
+                  <div className="sub">
+                    {ev.timestamp} · {ev.actor}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
       </div>
+    </>
+  );
+}
+
+function Documents({ go }: { go: (p: Page) => void }) {
+  const { documents, setSelectedDocId } = useAppStore();
+  const [statusFilter, setStatusFilter] = useState("Todos");
+
+  const filtered = documents.filter((d) => statusFilter === "Todos" || d.status === statusFilter);
+
+  return (
+    <>
+      <PageHead
+        title="Documentos"
+        subtitle="Trazabilidad completa de archivos recibidos, clasificados y almacenados."
+      />
+      <Card>
+        <div className="toolbar">
+          <div className="tabs">
+            {["Todos", "Almacenado", "Pendiente de revisión", "Excluido de IA"].map((tab) => (
+              <button
+                type="button"
+                key={tab}
+                className={statusFilter === tab ? "active" : ""}
+                onClick={() => setStatusFilter(tab)}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="table-wrap">
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Archivo</th>
+                <th>Estudiante</th>
+                <th>Remitente</th>
+                <th>Categoría</th>
+                <th>Estado</th>
+                <th>Fecha y hora</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((d) => (
+                <tr key={d.id}>
+                  <td>
+                    <strong>{d.fileName}</strong>
+                    {d.drivePath && <div className="sub">{d.drivePath}</div>}
+                  </td>
+                  <td>{d.studentName}</td>
+                  <td>{d.senderRole}</td>
+                  <td>{d.category}</td>
+                  <td>
+                    <Badge
+                      tone={
+                        d.status === "Almacenado"
+                          ? "green"
+                          : d.status === "Pendiente de revisión"
+                            ? "amber"
+                            : "gray"
+                      }
+                    >
+                      {d.status}
+                    </Badge>
+                  </td>
+                  <td>{d.receivedAt}</td>
+                  <td>
+                    {d.status === "Pendiente de revisión" && (
+                      <Button
+                        onClick={() => {
+                          setSelectedDocId(d.id);
+                          go("review");
+                        }}
+                      >
+                        Revisar
+                      </Button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
     </>
   );
 }
 
 function Review({ go }: { go: (p: Page) => void }) {
+  const { documents, selectedDocId, correctDocumentCategory } = useAppStore();
+  const doc = documents.find((d) => d.id === selectedDocId) ?? documents[0];
+  const [category, setCategory] = useState<DocCategory>(doc?.category ?? "Pasaporte");
+
+  if (!doc) return null;
+
   return (
     <>
       <PageHead
-        title="Revisar documento"
-        subtitle="ana_pasaporte.pdf · DOC-012 · Recibido el 14 oct 2026, 10:12."
-        action={
-          <Button onClick={() => go("documents")}>
-            <Icon name="back" /> Volver a documentos
-          </Button>
-        }
+        title="Revisión de documento"
+        subtitle="Confirma o corrige la categoría sugerida por la IA."
+        back="Volver a Documentos"
+        onBack={() => go("documents")}
       />
       <div className="review-grid">
         <Card className="preview">
-          <div className="preview-bar">
-            <b>Vista previa ficticia</b>
-            <span>− &nbsp;&nbsp; 100 % &nbsp;&nbsp; ＋</span>
-          </div>
           <div className="paper">
-            <small>DOCUMENTO DE EJEMPLO</small>
-            <h2>PASAPORTE</h2>
-            <p>Sin información personal ni validez oficial</p>
-            <hr />
-            <div className="passport">
-              <div className="portrait">♙</div>
-              <div>
-                <small>NOMBRE: MUESTRA</small>
-                <small>NÚMERO: XXXXXXXX</small>
-                <small>FECHA: XX / XX / XXXX</small>
-              </div>
-            </div>
-            <b className="sample">MUESTRA · NO VÁLIDO</b>
-            <p>
-              P&lt;&lt;MUESTRA&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
-              <br />
-              XXXXXXXX&lt;&lt;&lt;DEMO&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
-            </p>
+            <Icon name="files" size={32} />
+            <strong>{doc.fileName}</strong>
+            <p className="sub">Remitente: {doc.senderName}</p>
+            <p className="sub">Confianza IA: {doc.confidence ?? 0}%</p>
           </div>
-          <small>Página 1 de 1 · PDF · 1,2 MB</small>
         </Card>
-        <div className="review-side">
-          <Card>
-            <div className="section-title">
-              <h3>Ana Torres · AE-001</h3>
-              <Badge tone="amber">Pendiente de revisión</Badge>
-            </div>
-            <p>
-              Remitente: Ana Torres · Estudiante &nbsp; <Badge tone="green">Activo</Badge>
-            </p>
-            <b className="ai">
-              <Icon name="sparkles" /> Categoría sugerida por IA: Pasaporte
-            </b>
+        <Card>
+          <h3>Clasificación manual</h3>
+          <div className="stack">
             <label className="field">
-              Categoría final · puedes corregir
-              <select>
-                <option>Pasaporte</option>
+              <span>Categoría documental</span>
+              <select
+                className="select-input"
+                value={category}
+                onChange={(e) => setCategory(e.target.value as DocCategory)}
+              >
+                <option value="Pasaporte">Pasaporte</option>
+                <option value="DNI">DNI</option>
+                <option value="Certificado de estudios">Certificado de estudios</option>
+                <option value="Extracto bancario">Extracto bancario</option>
+                <option value="Visa anterior">Visa anterior</option>
               </select>
             </label>
-            <p className="eyebrow">DESTINO EXISTENTE · SIMULADO</p>
-            <b className="blue">Estudiantes / AE-001_Ana_Torres / Pasaporte</b>
-            <p>Aún no almacenado. Requiere confirmación del personal.</p>
-            <div className="actions">
-              <Button>Guardar corrección</Button>
-              <Button primary>✓ &nbsp; Confirmar y almacenar</Button>
-            </div>
-          </Card>
-          <Card>
-            <h3>Cronología del documento</h3>
-            <ol className="timeline">
-              <li>
-                <time>10:12</time>
-                <div>
-                  <b>Recibido</b>
-                  <small>WhatsApp · Grupo Andino | Ana Torres</small>
-                </div>
-              </li>
-              <li>
-                <time>10:13</time>
-                <div>
-                  <b>Clasificado por IA</b>
-                  <small>Sugerencia: Pasaporte · resultado simulado</small>
-                </div>
-              </li>
-              <li>
-                <time>Ahora</time>
-                <div>
-                  <b>Revisión humana pendiente</b>
-                  <small>Carolina Ríos · categoría por confirmar</small>
-                </div>
-              </li>
-              <li>
-                <time>Después</time>
-                <div>
-                  <b>Almacenamiento pendiente</b>
-                  <small>Se registrará el destino y la hora al autorizar.</small>
-                </div>
-              </li>
-            </ol>
-          </Card>
-        </div>
+            <Button
+              primary
+              onClick={() => {
+                correctDocumentCategory(doc.id, category);
+                go("documents");
+              }}
+            >
+              Guardar como Validación humana
+            </Button>
+          </div>
+        </Card>
       </div>
-      <p className="footnote">
-        La revisión confirma la categoría y el destino documental; no certifica autenticidad,
-        validez legal ni decisiones de visado.
-      </p>
     </>
   );
 }
 
 function Alerts() {
-  const items = [
-    ["Alta", "14 oct · 10:18", "Estudiante inactivo", "Lucía Mendoza", "Nuevo extracto bancario"],
-    [
-      "Media",
-      "14 oct · 09:52",
-      "Carpeta no vinculada",
-      "Sofía Herrera",
-      "Certificado pendiente de destino",
-    ],
-    ["Media", "14 oct · 10:13", "Revisión de categoría", "Ana Torres", "Pasaporte sugerido por IA"],
-    [
-      "Media",
-      "14 oct · 09:48",
-      "Registro por validar",
-      "Martín Rojas",
-      "Identidad y carpeta por confirmar",
-    ],
-  ];
-  const [selected, setSelected] = useState(0);
-  const current = items[selected];
+  const { alerts, resolveInactiveAlert } = useAppStore();
+
   return (
     <>
       <PageHead
-        title="Alertas"
-        subtitle="Revisa excepciones antes de continuar el flujo documental."
-        action={
-          <Button>
-            <Icon name="refresh" /> Actualizar
-          </Button>
-        }
+        title="Alertas operativas"
+        subtitle="Retenciones preventivas de estudiantes inactivos y validaciones pendientes."
       />
-      <Tabs items={["Abiertas (4)", "Resueltas (0)"]} />
-      <div className="alerts-layout">
-        <div className="alert-list">
-          {items.map((a, i) => (
-            <button
-              className={i === selected ? "selected" : ""}
-              key={a[2]}
-              onClick={() => setSelected(i)}
-            >
+      <div className="stack">
+        {alerts.map((a) => (
+          <Card key={a.id}>
+            <div className="reactivation">
               <div>
-                <Badge tone={a[0] === "Alta" ? "amber" : "gray"}>{a[0]}</Badge>
-                <time>{a[1]}</time>
+                <div className="head-action">
+                  <Badge tone={a.priority === "Alta" ? "amber" : "blue"}>{a.priority}</Badge>
+                  <Badge tone={a.status === "Abierta" ? "amber" : "green"}>{a.status}</Badge>
+                </div>
+                <h3>{a.title}</h3>
+                <p className="sub">{a.description}</p>
+                <small className="sub">{a.createdAt}</small>
               </div>
-              <b>{a[2]}</b>
-              <strong>{a[3]}</strong>
-              <span>{a[4]}</span>
-            </button>
-          ))}
-        </div>
-        <div className="alert-detail">
-          <Card>
-            <div className="section-title">
-              <h2>{selected === 0 ? "Documento de estudiante inactivo" : current[2]}</h2>
-              <Badge tone="amber">Abierta</Badge>
-            </div>
-            <div className="warning">
-              <Icon name="warning" />
-              <div>
-                <b>
-                  {selected === 0 ? "No se ha guardado en Google Drive" : "Acción manual requerida"}
-                </b>
-                <p>
-                  El archivo permanece pendiente de revisión. No se almacenará automáticamente
-                  mientras no exista autorización del personal.
-                </p>
-              </div>
-            </div>
-            <div className="detail-cols">
-              <div>
-                <span>ESTUDIANTE</span>
-                <b>{current[3]} · AE-004</b>
-                <Badge tone="gray">Inactivo</Badge>
-              </div>
-              <div>
-                <span>DOCUMENTO RECIBIDO</span>
-                <b>lucia_extracto.pdf</b>
-                <small>14 oct 2026 · 10:18</small>
-              </div>
-            </div>
-            <p>
-              Remitente: Lucía Mendoza · Estudiante
-              <br />
-              Grupo: Andino | Lucía Mendoza · Inactiva desde el 12 oct.
-            </p>
-            <label className="field">
-              Categoría para revisión
-              <select>
-                <option>Extracto bancario</option>
-              </select>
-            </label>
-            <p className="eyebrow">DESTINO PROPUESTO · NO ALMACENADO</p>
-            <b className="blue">Estudiantes / AE-004_Lucia_Mendoza / Extractos</b>
-            <label className="check">
-              <input type="checkbox" /> He revisado la categoría y la carpeta de destino.
-            </label>
-            <div className="actions">
-              <Button>
-                <Icon name="files" /> Ver documento
-              </Button>
-              <Button disabled>
-                <Icon name="lock" /> Autorizar almacenamiento
-              </Button>
+              {a.status === "Abierta" && a.documentId && (
+                <div className="head-action">
+                  <Button onClick={() => resolveInactiveAlert(a.id, true, false)}>
+                    Autorizar solo documento
+                  </Button>
+                  <Button primary onClick={() => resolveInactiveAlert(a.id, true, true)}>
+                    Autorizar y reactivar
+                  </Button>
+                </div>
+              )}
             </div>
           </Card>
-          <Card className="reactivation">
-            <div>
-              <h3>Reactivación: una decisión independiente</h3>
-              <p>
-                Reactivar cambia el estado del estudiante. No autoriza ni guarda este documento; la
-                revisión anterior sigue siendo necesaria.
-              </p>
-            </div>
-            <Button>Reactivar estudiante</Button>
-          </Card>
-        </div>
+        ))}
       </div>
     </>
   );
@@ -1154,257 +769,94 @@ function Integrations() {
     <>
       <PageHead
         title="Integraciones"
-        subtitle="Configura el puente documental sin reemplazar las herramientas del equipo."
-        action={
-          <Button>
-            <Icon name="settings" /> Revisar configuración
-          </Button>
-        }
+        subtitle="Estado de conexión con WhatsApp Business, Google Drive y Gemini API."
       />
-      <Tabs items={["Servicios", "Reglas del flujo", "Registro de eventos"]} />
-      <InfoBanner>
-        <strong>Todas las conexiones son simuladas</strong>
-        <p>
-          Esta demostración no accede a WhatsApp Business ni a Google Drive. Estados, cuentas y
-          revisiones son ejemplos visuales.
-        </p>
-      </InfoBanner>
-      <div className="integration-grid">
-        <IntegrationCard
-          icon="message"
-          title="WhatsApp Business"
-          badge="Recepción simulada"
-          rows={[
-            ["Cuenta de ejemplo", "Andino · +51 ••• ••• 000"],
-            ["Grupos de ejemplo", "8 grupos · 8 estudiantes detectados"],
-            ["Última revisión simulada", "14 oct 2026 · 10:30"],
-          ]}
-          text="Identifica al remitente antes de clasificar. Los archivos enviados por personal quedan excluidos de IA."
-          buttons={["Configurar recepción", "Revisar grupos"]}
-        />
-        <IntegrationCard
-          icon="folder"
-          title="Google Drive"
-          badge="Vinculación simulada"
-          rows={[
-            ["Cuenta de ejemplo", "documentos@andino.example"],
-            ["Carpetas de ejemplo", "6 vinculadas · 2 pendientes de vinculación"],
-            ["Destino de trabajo", "Carpetas existentes / Estudiantes"],
-          ]}
-          text="Guarda solo en la carpeta vinculada. Los casos de estudiantes inactivos requieren autorización específica."
-          buttons={["Configurar destino", "Revisar carpetas"]}
-        />
+      <div className="metrics-grid">
+        <Card>
+          <h3>WhatsApp Business</h3>
+          <Badge tone="green">Conectado</Badge>
+          <p className="sub">Escucha activa de grupos y remitentes.</p>
+        </Card>
+        <Card>
+          <h3>Google Drive</h3>
+          <Badge tone="green">Conectado</Badge>
+          <p className="sub">Almacenamiento automático por carpeta vinculada.</p>
+        </Card>
+        <Card>
+          <h3>Clasificador IA</h3>
+          <Badge tone="green">Activo</Badge>
+          <p className="sub">Detección automática de 5 categorías documentales.</p>
+        </Card>
       </div>
-      <Card>
-        <h3>Reglas de seguridad documental</h3>
-        <div className="rules">
-          <Rule
-            icon="userCheck"
-            title="Validación del registro"
-            text="Datos completos y carpeta existente antes de activar."
-          />
-          <Rule
-            icon="scan"
-            title="Revisión humana"
-            text="La IA sugiere categorías; no toma decisiones de visado."
-          />
-          <Rule
-            icon="shield"
-            title="Autorización explícita"
-            text="Un documento de un inactivo nunca se guarda automáticamente."
-          />
-        </div>
-      </Card>
-      <p className="footnote">
-        El flujo de grupos de WhatsApp es un supuesto del proyecto, sujeto a validación técnica; no
-        garantiza disponibilidad en la API de WhatsApp Business.
-      </p>
     </>
-  );
-}
-
-function IntegrationCard({
-  icon,
-  title,
-  badge,
-  rows,
-  text,
-  buttons,
-}: {
-  icon: keyof typeof icons;
-  title: string;
-  badge: string;
-  rows: string[][];
-  text: string;
-  buttons: string[];
-}) {
-  return (
-    <Card>
-      <div className="integration-title">
-        <span>
-          <Icon name={icon} />
-        </span>
-        <div>
-          <h2>{title}</h2>
-          <Badge>{badge}</Badge>
-        </div>
-      </div>
-      <dl>
-        {rows.map((r) => (
-          <div key={r[0]}>
-            <dt>{r[0]}</dt>
-            <dd>{r[1]}</dd>
-          </div>
-        ))}
-      </dl>
-      <p>{text}</p>
-      <div className="actions">
-        {buttons.map((b, i) => (
-          <Button key={b}>
-            {i === 0 && <Icon name="settings" />}
-            {b}
-          </Button>
-        ))}
-      </div>
-    </Card>
-  );
-}
-
-function Rule({ icon, title, text }: { icon: keyof typeof icons; title: string; text: string }) {
-  return (
-    <div>
-      <Icon name={icon} />
-      <b>{title}</b>
-      <p>{text}</p>
-    </div>
   );
 }
 
 function Users() {
-  const people = [
-    [
-      "Carolina Ríos",
-      "carolina.rios@andino.example",
-      "Administrador",
-      "Habilitado",
-      "14 oct · 10:30",
-    ],
-    ["Luis Salazar", "luis.salazar@andino.example", "Encargado", "Habilitado", "14 oct · 10:20"],
-    ["Elena Paredes", "elena.paredes@andino.example", "Personal", "Habilitado", "13 oct · 17:45"],
-    ["Pilar Vega", "pilar.vega@andino.example", "Personal", "Suspendido", "10 oct · 12:15"],
-  ];
+  const { users, toggleUserActive } = useAppStore();
   return (
     <>
-      <PageHead
-        title="Usuarios y roles"
-        subtitle="Administra el acceso del personal y los permisos del espacio de trabajo."
-        action={
-          <Button primary>
-            <Icon name="userPlus" /> Invitar usuario
-          </Button>
-        }
-      />
-      <InfoBanner>
-        <strong>Área exclusiva del administrador</strong>
-        <p>
-          Carolina Ríos tiene acceso de administradora. El personal y los encargados no pueden
-          acceder a la gestión de usuarios.
-        </p>
-      </InfoBanner>
-      <Tabs items={["Personal (4)", "Roles y permisos", "Invitaciones (0)"]} />
-      <Filters search="Buscar por nombre o correo" filters={["Rol: todos", "Acceso: todos"]} />
-      <Card className="table-card">
-        <table>
-          <thead>
-            <tr>
-              <th>PERSONAL</th>
-              <th>ROL</th>
-              <th>ACCESO</th>
-              <th>ÚLTIMA ACTIVIDAD</th>
-              <th>GESTIÓN</th>
-            </tr>
-          </thead>
-          <tbody>
-            {people.map((p) => (
-              <tr key={p[0]}>
-                <td>
-                  <b className="blue">{p[0]}</b>
-                  <small>{p[1]}</small>
-                </td>
-                <td>{p[2]}</td>
-                <td>
-                  <Badge tone={p[3] === "Habilitado" ? "green" : "gray"}>{p[3]}</Badge>
-                </td>
-                <td>{p[4]}</td>
-                <td>
-                  <button className="link">
-                    {p[3] === "Habilitado" ? "Gestionar permisos →" : "Revisar acceso →"}
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        <Pager label="Mostrando 4 de 4 usuarios" />
-      </Card>
-      <div className="permissions-grid">
-        <Card>
-          <h3>Permisos por rol</h3>
-          <table className="permissions">
+      <PageHead title="Usuarios y roles" subtitle="Control de acceso del equipo de Andino." />
+      <Card>
+        <div className="table-wrap">
+          <table className="table">
             <thead>
               <tr>
-                <th>CAPACIDAD</th>
-                <th>Personal</th>
-                <th>Encargado</th>
-                <th>Administrador</th>
+                <th>Nombre</th>
+                <th>Correo</th>
+                <th>Rol</th>
+                <th>Estado</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
-              {[
-                ["Revisar y clasificar documentos", "✓", "✓", "✓"],
-                ["Activar y desactivar estudiantes", "—", "✓", "✓"],
-                ["Autorizar casos excepcionales", "—", "✓", "✓"],
-                ["Configurar servicios y gestionar usuarios", "—", "—", "✓"],
-              ].map((r) => (
-                <tr key={r[0]}>
-                  {r.map((c, i) => (
-                    <td key={i}>{c}</td>
-                  ))}
+              {users.map((u) => (
+                <tr key={u.id}>
+                  <td>{u.name}</td>
+                  <td>{u.email}</td>
+                  <td>
+                    <Badge>{u.role}</Badge>
+                  </td>
+                  <td>
+                    <Badge tone={u.active ? "green" : "gray"}>
+                      {u.active ? "Activo" : "Suspendido"}
+                    </Badge>
+                  </td>
+                  <td>
+                    <Button onClick={() => toggleUserActive(u.id)}>
+                      {u.active ? "Suspender" : "Activar"}
+                    </Button>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
-        </Card>
-        <Card>
-          <h3>Acceso con trazabilidad</h3>
-          <Icon name="shield" />
-          <p>
-            Los cambios de rol y acceso quedan en el historial. Suspender un usuario no borra sus
-            acciones anteriores.
-          </p>
-          <small>Permisos y actividad simulados.</small>
-        </Card>
-      </div>
+        </div>
+      </Card>
     </>
   );
 }
 
-export default function App() {
-  const [page, setPage] = useState<Page>("login");
+function AppContent() {
+  const [page, setPage] = useState<Page>("home");
+
   if (page === "login") return <Login go={setPage} />;
-  const crumb: Record<Exclude<Page, "login">, string> = {
+
+  const titles: Record<Page, string> = {
+    login: "Acceso",
     home: "Inicio",
     students: "Estudiantes",
-    validation: "Estudiantes / Validación",
-    student: "Estudiantes / Ana Torres",
+    validation: "Validar estudiante",
+    student: "Ficha de estudiante",
     documents: "Documentos",
-    review: "Documentos / Revisión",
+    review: "Revisión de documento",
     alerts: "Alertas",
-    integrations: "Configuración / Integraciones",
-    users: "Configuración / Usuarios",
+    integrations: "Integraciones",
+    users: "Usuarios",
   };
+
   return (
-    <Shell page={page} go={setPage} crumb={crumb[page]}>
+    <Shell page={page} go={setPage} breadcrumb={titles[page]}>
       {page === "home" && <Home go={setPage} />}
       {page === "students" && <Students go={setPage} />}
       {page === "validation" && <Validation go={setPage} />}
@@ -1415,5 +867,13 @@ export default function App() {
       {page === "integrations" && <Integrations />}
       {page === "users" && <Users />}
     </Shell>
+  );
+}
+
+export default function App() {
+  return (
+    <AppStoreProvider>
+      <AppContent />
+    </AppStoreProvider>
   );
 }
