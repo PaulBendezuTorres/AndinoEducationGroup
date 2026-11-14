@@ -298,10 +298,6 @@ function Login({ go }: { go: (p: Page) => void }) {
                 ¿Olvidaste tu contraseña?
               </button>
             </div>
-            <div className="sub" style={{ marginTop: 14 }}>
-              Cuentas: carolina@andino.edu (Admin) · luis.vega@andino.edu (Encargado) ·
-              valeria.q@andino.edu (Personal)
-            </div>
           </form>
         ) : (
           <form
